@@ -1,0 +1,35 @@
+{
+  "batch": {
+    "batch_id": "fixture-batch",
+    "group_id": "fixture-group",
+    "group_name": "羽球測試社團",
+    "group_url": "https://www.facebook.com/groups/fixture-group/",
+    "finished_at": "2026-09-01T12:00:00.000Z"
+  },
+  "posts": [
+    {
+      "post_id": "post-secret-base",
+      "post_url": "https://www.facebook.com/groups/fixture-group/posts/post-secret-base/",
+      "author_name": "測試團主甲",
+      "author_url": "https://www.facebook.com/groups/fixture-group/user/10001/",
+      "content_text": "秘密基地羽球館，平日固定15:00-18:00，不限程度，新手也歡迎。有興趣請點我頭貼私訊報名。",
+      "content_is_truncated": false,
+      "scraped_at": "2026-09-01T11:00:00.000Z",
+      "media": [],
+      "warnings": []
+    },
+    {
+      "post_id": "post-line",
+      "post_url": "https://www.facebook.com/groups/fixture-group/posts/post-line/",
+      "author_name": "測試團主乙",
+      "author_url": "https://www.facebook.com/groups/fixture-group/user/10002/",
+      "content_text": "9/2（三）14:00-16:00 板橋羽球館，程度4-6級，費用250元，LINE：play_ball，報名表 https://example.com/register?event=2",
+      "content_is_truncated": false,
+      "scraped_at": "2026-09-01T11:30:00.000Z",
+      "media": [
+        { "type": "image", "url": "https://example.com/poster.jpg" }
+      ],
+      "warnings": []
+    }
+  ]
+}

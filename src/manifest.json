@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook 社團貼文匯出器",
+  "version": "0.1.0",
+  "description": "將目前有權查看的 Facebook 社團主貼文匯出為 JSON 或安全 CSV。",
+  "permissions": ["activeTab", "scripting", "storage", "downloads"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Facebook 社團貼文匯出器",
+    "default_popup": "popup.html"
+  }
+}

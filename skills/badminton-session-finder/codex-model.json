@@ -1,0 +1,8 @@
+{
+  "model": "gpt-5.6-sol",
+  "version": "sol-low-fast-1",
+  "mode": "codex-exec",
+  "model_reasoning_effort": "low",
+  "service_tier": "priority",
+  "batch_size": 50
+}

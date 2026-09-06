@@ -1,0 +1,568 @@
+{
+  "version": 2,
+  "status": "awaiting_human_annotation",
+  "provenance": "30 real posts derived from the existing local source_records export; author metadata, IDs, URLs, and contact/person tokens removed. Draft expectations are agent-written and are not human-confirmed labels. Existing raw files are unchanged.",
+  "limitations": [
+    "No observation in the existing 800-post source has content_is_truncated=true; incomplete wording is included but does not substitute for a genuinely flagged truncated sample.",
+    "Human privacy review and semantic confirmation are still required."
+  ],
+  "samples": [
+    {
+      "id": "post_154eb2a6b428580bd324",
+      "categories": [
+        "single_session",
+        "recurrence_and_date"
+      ],
+      "context": {
+        "text": "#徵臨打〔已去識別〕羽球團日期：9/7 每週一地點：內湖運動中心時間：上午10-12點 程度：5～8級用球：好神 4費用：230.-3面 20人球友都很nice，歡迎留言報名或私訊喲",
+        "reference_time": "2026-09-05T03:38:27.650Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:27.650Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一個週一10:00–12:00的團，明列9/7可保存日期2026-09-07與週期；230元；5–8級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_da5b15f2ff915a2f92a7",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "9/6星期日 蓬萊國小 四面場YONEX AS30羽球臨打招生中#徵零打 #徵臨打時間：9/6(日）20:00–21:50地點：台北市蓬萊國小體育館二樓名額： 16人（滿32人截止）程度：初中～中上場地：4面 PU 地墊用球：YONEX AS30 費用：250 / 人（請自備零錢）請務必穿著 羽球鞋停車：學校周邊格位捷運：雙連站步行約7分鐘報名方式：在留言區 +1 或私訊即可",
+        "reference_time": "2026-09-05T03:38:29.012Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:29.012Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 20:00–21:50，蓬萊國小；250元；名額16與總上限32分別保留。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_20c15d1a872c6dd44b4b",
+      "categories": [
+        "single_session",
+        "source_conflict"
+      ],
+      "context": {
+        "text": "時間: 9/7週日下午13:00-15:00地點: 永吉國中費用: 250程度：4-6級場地：3面用球：MS-95（學校裡面可以停車）我們是固定團 想要找新朋友一起來玩 希望大家開心交流打球 看重勝負的朋友請繞道唷~有教練陪打喔喔喔喔！！！聯繫方式：私訊或底下留言都可唷謝謝大家 顯示較少",
+        "reference_time": "2026-09-05T03:38:30.784Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:30.784Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "9/7與週日衝突；日期不可強填，13:00–15:00永吉國中；250元；標示來源衝突。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_6a1de6c9d859498ede68",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "時間：9/5（六）14:00～17:00--徵求零打地點：台北巿石牌國中(活動中心3樓)地址：近石牌捷運站(1號出口斜對面)，走路到校3分鐘機車可免費停校內，汽車請停捷運站或石牌國小地下停車場費用：250元/3小時用球：摩亞ms-90比賽球程度：女生 6級(含)以上，男生7級(含)-10級備註: 意者請於下面或 line留言: 人數與程度，收到訊息會盡速私訊回覆，謝謝! (line ID: 〔已去識別〕)",
+        "reference_time": "2026-09-05T03:38:32.437Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:32.437Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 14:00–17:00石牌國中；250元/180分鐘；男女程度條件留全文，不合併成無條件單一程度範圍。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_cb397dc929dce062732d",
+      "categories": [
+        "overnight",
+        "conditional_price",
+        "incomplete_text"
+      ],
+      "context": {
+        "text": "週六午夜場09/05(六)地點:新莊飛颺羽球館3hrpm. 9-12 $3502hrpm.10-12 $2506級up可多拍+基本輪轉用球：慷柏 K3街口, LinePay6級up可多拍,基本輪轉專人排場, I人友善,熱血互毆歡迎私訊:〔已去識別〕(去底線 顯示較少",
+        "reference_time": "2026-09-05T03:38:33.835Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:33.835Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一個午夜場，21:00–次日00:00三小時350、22:00–次日00:00兩小時250；同場時數方案保留；末段聯絡文字不完整須確認。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_b4993b581d4ebc95280f",
+      "categories": [
+        "multiple_pairings",
+        "conditional_price",
+        "recurrence_and_date"
+      ],
+      "context": {
+        "text": "〔已去識別〕羽球隊每週二、四、日9/1（星期二）北市螢橋國小 18:35-20:459/3（星期四）北市螢橋國小 18:35-20:459/6（星期日）北市大理國小（夏季冷氣開放）10:00-14:00場地：PU用球：YONEX AS-50及美津濃SKY 10頂級球程度：中下-中-中上（7-12級）時段:每週二.週四 18:35~20:45(北市螢橋國小) 校園規定18:30入校 (台北市中正區詔安街29號進校門右手邊直走到底活動中心4樓)機車可停進校園,請進校門勿騎,右轉牽至停車棚,汽車18:00放學後校外黃線區可停(捷運為古亭站,可騎Ubike至螢橋國小,汀州路與泉州街口有Ubike站)時段:每週日 10:00~14:00 (大理國小) (台北市萬華區艋舺大道389號,請從學校正門進入，面對操場鐘樓左前方樓梯上活動中心三樓)假日汽機車請停校園周邊公有停車格,不收費,假日可停黃線區(捷運為龍山寺站,可騎Ubike至大理高中站停妥再步行3分鐘到大理國小)ps:會員費用採季繳制,歡迎球友長期加入或來交流零打零打收費: 週二.週四 $200 週日 10:00-12:00 $200 12:00-14:00 $200 10:00-14:00 $350聯絡電話: 〔已去識別〕 〔已去識別〕(LINE ID:〔已去識別〕)^_^若已預約零打後有事不能來要取消，請*務必*提早至少一天以上取消，勿當天臨時取消，好讓其他球友能提早安排遞補，謝謝",
+        "reference_time": "2026-09-05T03:38:35.761Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:35.761Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "二／四18:35–20:45螢橋國小、日10:00–14:00大理國小；明列9/1、9/3、9/6與週期不得交叉配對；週日兩小時200、四小時350。可接受按明確日各列，或二／四合併週期並另保留明確日證據，待人工定義可接受集合。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_34356f89bc3091f91bfc",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "五常國小地址：台北市中山區五常街16號日期：9/9（三) 時間：18：30 - 20:30場地：五樓體育館 靠近男廁換 2面場 交通：棕線中山國中捷運站 步行5-8分停車場：國小對面或旁邊停車格用球：yy yonex程度：初階-中下價錢 ：230歡迎私訊+1",
+        "reference_time": "2026-09-05T03:38:38.195Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:38.195Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-09 18:30–20:30五常國小；230元；初階至中下。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_44bbe881f92199465a70",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "週日石牌國中羽球團: 9/6（日) 時間：早上10～12點地點：石牌國中場地：三面:臨打價(2)(0)(0)元程度: （4-8級）（新手友善須知規則）球種：Kombo k3臨打報名私訊或底下留言+1",
+        "reference_time": "2026-09-05T03:38:39.748Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:39.748Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 10:00–12:00石牌國中；200元；4–8級且新手友善須知規則。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_c7f08c49231fd9fa3bcc",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "急徵今天臨打2位，男女皆可友善場日期：9/5 (週六)時間：19:30-21:30地點：台北市興雅國小 四樓羽球場費用：250程度：4-8用球：勝利藍蓋備註：有冷氣＆飲水機，報名請私訊或留言，感謝 顯示較少",
+        "reference_time": "2026-09-05T03:38:43.643Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:43.643Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場明列2026-09-05 19:30–21:30興雅國小；250元，缺2；日期由明列9/5支持，不單以今天換算。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_4892162b486b38ef4e62",
+      "categories": [
+        "single_session",
+        "conditional_price"
+      ],
+      "context": {
+        "text": "〔已去識別〕 徵4名日期：9/8（星期二）地點：森域羽球會館時間：14:00～17:00 場地：2面 1面/6人費用：男$330 女$300程度：適合4～8級用球：勝利藍蓋報名請告暱稱 大約級數友善交流球技 顯示較少",
+        "reference_time": "2026-09-05T03:38:44.868Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:44.868Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-08 14:00–17:00森域羽球會館；男330女300，缺4，4–8級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_77f3f0e4e589d2c5c78b",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "9/6 (日) 新南港運動中心.早上10-12點 徵求臨打.時間：早上10-12點 / 2小時地點：南港運動中心6F的羽球場地址： 臺北市南港區玉成街69號程度要求：女生4級和男生5級別或以上停車：地下收費汽車和機車停車場費用 ： $250/人 2小時可報名人數：徵求 2 人使用球：鵝毛比賽級用球報名方式：麻煩請私訊我報名謝謝！",
+        "reference_time": "2026-09-05T03:38:46.207Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:46.207Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 10:00–12:00南港運動中心；250元，缺2；女4男5以上留條件全文。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_2acd0bad10a235f2d1b8",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "時間：9/6（日）下午17:00-20:00地點：中山國小3樓費用：300元程度：5-7級用球：Volar 10或同級球報名：請在本貼文留言或私訊歡迎大家一起來打球 顯示較少",
+        "reference_time": "2026-09-05T03:38:47.662Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:47.662Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 17:00–20:00中山國小；300元；5–7級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_a09b0ad89dd84c30bd6b",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "#週六羽球誠徵羽球小夥伴一起打球！這一季(7-9月)換到蓬萊國小喔！！！週六下午，想找個地方打羽球嗎？蓬萊國小 鄰近美食戰區(寧夏夜市)歡迎愛打球的你一起來交流！時間：8/15（六）下午4-6點，4面場 (上限28人)地點：蓬萊國小綜合體育館2樓(近捷運雙連站，請從太原路入校)費用：200元/人用球：鵝毛比賽級 (Kombo 3A）程度：建議初上以上，約分級表5以上 (女5男6)人數：場均7人/面，輪轉快，上場次數多 CP值絕佳交通位置，打完球覓食超方便。近建成停車場/蓬萊國小停車場務必穿著運動服、羽球鞋報名不放鳥，有禮貌、有球品請在本貼文留言或私訊報名時段，收到確認即報名成功 顯示較少",
+        "reference_time": "2026-09-05T03:38:51.631Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:51.631Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "明列8/15週六16:00–18:00蓬萊國小，不能因擷取在9月就改為9/5；200元；女5男6條件。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_b4d553f2da0e554c73ff",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "〔已去識別〕ʕ•ᴥ•ʔ日期：115/09/05(六)時間：18:00-22:00費用：$450現金、轉帳、Line pay都行喔！人數：缺6地點：南湖高中運動中心2樓程度：歡樂-中下用球：勝利藍蓋交通：捷運 - 東湖捷運站 2 號出口，步行 30 秒距離公車 - 東湖站（南湖高中），步行 1 分鐘距離若遇颱風依人事行政局公告台北市停班 本團即停團唷！另徵季打球友 歡迎私訊詢問哦！每次的上場請珍惜用球～ 請珍惜用球～ 請珍惜用球～ 附有廁所/飲水機 汽車 - 有停車場，40/h 機車 - 附近眾多停車格 Line : 〔網址已由程式保留〕 or ㄌㄞˋ私麻煩ㄌㄞˋ私資訊 ～稱呼 及 程度喔！備註：本團原有內建有新手，請友善懂禮貌對待，勿靠北臭臉GY、謝絕勝負魔人、碎念煩人，歡樂開心最重要，不定時會有友善高手出沒唷！切記～切記～切記～已預約報名完成，若臨時取消者，請予以付費為補貼球團球費，Please don't argue.直接報名即可，網路社團多平台同步。相關團規由團主保留變更權利並異動公告內容。",
+        "reference_time": "2026-09-05T03:38:52.731Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:52.731Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 18:00–22:00南湖高中；450元，缺6；颱風條件取消不等於已取消。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_834e0f554bbf17f96d82",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "徵臨打7-9月時間： 9/5（六）15:30-17:30地點： 成德國小程度： 男7女6（以上）費用： 250（2hours )用球 ： kombo 最多3面21人 打好打滿 顯示較少",
+        "reference_time": "2026-09-05T03:38:54.389Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:54.389Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 15:30–17:30成德國小；250元/120分鐘；男7女6以上。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_ad1f837e2de798d7f2eb",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "誠徵臨打～日期：9/6(日） 時間：晚上 20:00~22:00地點：台北市內湖運動中心（冷氣,飲水機,盥洗室,汽、機車停車場）人數：共4面場，一面場6~7人～CP值高！用球：勝利藍蓋費用：250元程度：中等（7-9級）聯繫Line ID：〔已去識別〕請私訊",
+        "reference_time": "2026-09-05T03:38:56.739Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:56.739Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 20:00–22:00內湖運動中心；250元；7–9級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_25aadcf8534e83b41fdb",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "2026/9/5（六) 後埔羽球 還有13個位子報名請留言+1時間：9/5（六）12:40-15:40打球時段看仔細呦 需要請球友們一起幫忙架網 感謝 地點：後埔國小 五樓羽球場（有電梯） 220新北市板橋區重慶路157號（由大門光明街 進入） 停車資訊： > 汽車：可停校內 一次收費$50 交給警衛、或學校外圍也有停車格 > 機車：校內免費停零打費用：270（含球 黑摩亞） 冷氣 飲水機 冰塊球場怎麼走地圖資訊：〔網址已由程式保留〕，勿遺留在‘館內’。垃圾如想丟在警衛室旁邊大型垃圾桶 需使用*新北專用垃圾袋*否則會被罰款【借用物品歸位】：自己拿出來的椅子球聚結束後請記得歸位感謝大家的協助與配合！ 顯示較少",
+        "reference_time": "2026-09-05T03:38:57.981Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:57.981Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 12:40–15:40後埔國小；270元，缺13；停車50元不是羽球價格方案；程度未知。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_5f75a3b59a1fcdfa152f",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "永和運動中心徵求臨打時間：9/6(週日) 10-12程度：中階，6-9地點：永和運動中心用球：Yonex AS30費用：230元，請自備零錢人數：2場，一場抓7位報名方式： 留言 or 私訊基本球路穩定，跑動中長球可回到底線，有輪轉概念。 報名請說明稱呼/程度：〔已去識別〕/8級備註：1. 婉拒初階2. 報名當天取消照常收費3. 徵求好相處可多拍來回的球友",
+        "reference_time": "2026-09-05T03:38:59.439Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:38:59.439Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 10:00–12:00永和運動中心；230元；6–9級、婉拒初階。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_f5c98226b6044b2aa968",
+      "categories": [
+        "single_session",
+        "recurrence_and_date"
+      ],
+      "context": {
+        "text": "日新國小徵臨打(8/16) 開冷氣 開冷氣每週日晚上18-20點程度: 初中階（新手友善）交通方式：中山站5號出口球費：$300使用球:柏明頓550場地特色: 開冷氣,飲水機,淋浴間 專人排點、戰術討論。報名方式：1、直接在底下留言，我會盡快回覆2、line報名 (LINE: 〔已去識別〕) 顯示較少",
+        "reference_time": "2026-09-05T03:39:04.974Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:04.974Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "週日18:00–20:00日新國小與明列8/16；300元；新手友善；不得改為擷取當週日。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_5e5095ece1f83f8c2689",
+      "categories": [
+        "single_session",
+        "conditional_price"
+      ],
+      "context": {
+        "text": "9/5 (六) 徵 3名臨打地點：中研院體育館羽球場時間：中午12-3點 (3小時）人數：14人/2面程度：中等以上 (限7級以上,初階不適合)用球：KOMBO 慷柏 No.3費用：200元報名方式：留言+1PS 體育館進館需另付入場費150元，屬館方維護與清潔費。--------------------開車前往的話，院內停車免費，可以開進來，但進院大門會車牌辨識紀錄。騎機車者，院大門旁有機車停車場。全館空調，入館可免費使用1樓游泳池跟2樓健身房、PU跑道。館內每層樓都有飲料販賣機與冷熱飲水機，1、2樓有洗手間與熱水淋浴間(提供吹風機)。 顯示較少",
+        "reference_time": "2026-09-05T03:39:06.559Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:06.559Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 12:00–15:00中研院體育館；球費200另加必付入場150，不能只顯示無條件200；條件及額外費需保留，待人工確認方案表示。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_bcac4c7619cb83f9aef4",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "9/9(三) 九九九九九! 國民九九日徵零打台北體育館7F (小巨蛋3號出口)時間：20:00-22:00人數：15人 / 2面程度：4~8用球：勝利藍蓋費用：99報名方式：留言,私訊或加line報名〔已去識別〕友善初中階團、多拍來回，歡迎來打~ 顯示較少",
+        "reference_time": "2026-09-05T03:39:08.821Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:08.821Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-09 20:00–22:00台北體育館；99元；4–8級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_4413fd910da28e96ec28",
+      "categories": [
+        "single_session",
+        "missing_values"
+      ],
+      "context": {
+        "text": "打球趣【誠徵臨打】日期：9/12【週六】早上 10-12地點：中山國小附近場地：二~三面場地分攤費用：250/2時/位程度：初階~中下下用球：李寧A+60、Volar30或同等級用球聯絡人：〔已去識別〕 或 〔已去識別〕 / Line ID 〔已去識別〕報名方式：私訊、下方留言或賴+1(稱呼、人數、級數)注意時項：有專人排場1. 取消報名須知：取消一位請於24小時前告知，取消二位請於48小時前告知。超過取消時間請自行找人替補或付費，因為您已佔了名額。謝謝！2. 第一次報名，報名成功後請於打球二天前付款。謝謝！3. 垃圾請隨手帶走。謝謝！ 顯示較少",
+        "reference_time": "2026-09-05T03:39:11.254Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:11.254Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-12 10:00–12:00；地點僅中山國小附近，不能把場館確定為中山國小；250元。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_bebe7ffee55c54a32e98",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "時間：2026/9/5(周六)，晚上18:00~20:00 地點: 南港運動中心費用：250元程度：中上(8以上)，謝絕新手。報名方式：底下留言或私訊報名註：一個場地，最多6人，Ling-Mei 70用球 顯示較少",
+        "reference_time": "2026-09-05T03:39:12.548Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:12.548Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 18:00–20:00南港運動中心；250元；8級以上、非新手。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_2e8cbd0ba7eede273f80",
+      "categories": [
+        "single_session",
+        "recurrence_and_date"
+      ],
+      "context": {
+        "text": "[ 每週六零打徵人共4場 ] （本週已滿） 日期：115年 9/05（週六） 地點：雙蓮國小活動中心3樓（近民權西路站） 用球：勝利藍蓋 時間：19:00-21:00 程度：中、中上(8~12) 零打：240元/次 空調：無 停車：成淵高中停車場（走路3min）應安停車場（走路1分鐘） 意者請傳訊息(麻煩告知程度範圍)感謝～～",
+        "reference_time": "2026-09-05T03:39:13.304Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:13.304Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 19:00–21:00雙蓮國小，另保存每週六；240元；本週已滿，預設隱藏。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_5f2e097d5c8e375d6710",
+      "categories": [
+        "multiple_pairings",
+        "conditional_price",
+        "conditional_price"
+      ],
+      "context": {
+        "text": "9/7（一）奧創板橋館地點：新北市板橋區中正路375巷1號時間：B時段18:00-20:30（2.5H) 大部份球友工作關係18:30才會到， 提早到場的可以先跟我們一起打 C時段20:30-22:30 可緩衝到22:45 （緩衝時間僅供堪用球）程度：初階至中階費用：2人以上同行，享$265元/1人 B+C時段優惠價$530元 以上限Linepay.銀轉 付現金者原價，原價1人1時段$280元使用球：勝利藍蓋/K3報到繳費請至2樓櫃臺1樓備有汽車停車位球友可至櫃臺登記車牌打9折喲！機車停車免費備注：取消需於6小時前告知，臨時取消導致候補無法補上仍需支付臨打費用 顯示較少",
+        "reference_time": "2026-09-05T03:39:19.378Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:19.378Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "2026-09-07奧創板橋館，18:00–20:30與20:30–22:30兩個可篩選時段；22:45僅緩衝。同行265、原價280、兩時段530及付款條件保留。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_a61e30399d80b2ec3ca2",
+      "categories": [
+        "single_session",
+        "source_conflict"
+      ],
+      "context": {
+        "text": "9/6 (日) 10:00~12:00地點：捷運大橋頭站 0平國小場地：一面只收7人,共2面分攤費用：230用球：KOMBO 3A程度：中階 7～9級, 多拍來回報名：留言或私訊 顯示較少",
+        "reference_time": "2026-09-05T03:39:26.355Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:26.355Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-06 10:00–12:00，原文0平國小不得猜改成太平國小；230元；7–9級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_36fe2ac0cdd6a65ba844",
+      "categories": [
+        "single_session"
+      ],
+      "context": {
+        "text": "週六晚上3小時臨打團場地：台北市中山國中4樓羽球場沒有冷氣-會爆汗不過有兩台工業用電扇，可以稍微解熱不限程度-有強有弱時間：9/5(六)18:30-21:30，3小時人數：16費用：每人$300用球：勝利藍蓋/或其他比賽用球注意：有以下現象請勿報名自我意識過強、毛很多、愛計較批評、臨時退局期待你的加入主揪沒辦法一直看手機，所以有問題或報名請耐心等候。 顯示較少",
+        "reference_time": "2026-09-05T03:39:31.013Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:31.013Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 18:30–21:30中山國中；300元；不限程度不等於明確歡迎完全新手，保留原文程度。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_4adddb9a973c10229e3d",
+      "categories": [
+        "multiple_pairings",
+        "conditional_price",
+        "conditional_price"
+      ],
+      "context": {
+        "text": "拾憶羽球團（固定新手友善團） 09/06｜週日（黃瓜羽球館）地點：新北市泰山區楓江路160-4號時段：13:00-16:00費用：兩小$250三小$350兩小的球友請備注時間謝謝(新團優惠2人同行零打費各減50元） 09/07｜週一（拾陸羽羽球館）地點：新北市泰山區中港西路120巷11-6號時段：20:00–22:00 費用：$25009/09｜週三（黃瓜羽球館）地點：新北市泰山區楓江路160-4號時段：20:30-22:30費用：兩小$250兩小的球友請備注時間謝謝(新團優惠2人同行零打費各減50元）你是剛接觸羽球運動的球友嗎？還在懊惱哪個團適合你嗎？不如來拾憶零打團打看看吧～絕對的新手友善，讓你開心運動，免費拿禮物回家。汽機車免費，位置超多團主教練隨機出沒下場陪打 新手友善團，需懂規則 3面場，限24人，專人排點上場 用球：kombo k3 基本輪轉，多拍來回報名方式：下方留言暱稱+等級範例：Andy / 8 顯示較少",
+        "reference_time": "2026-09-05T03:39:36.953Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:39:36.953Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "三場：2026-09-06 13:00–16:00黃瓜館，9/7 20:00–22:00拾陸羽館，9/9 20:30–22:30黃瓜館；兩小250／三小350與同行各減50依段落適用，不能全時段笛卡兒積。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_3db0499520606e43e797",
+      "categories": [
+        "single_session",
+        "missing_values"
+      ],
+      "context": {
+        "text": "==09/05 (六) -5人》《 ==時間: 20:00~22:00地點: 弘道國中 場地：3面/ 20人費用: 零打費 2小時用球: Moya95 or RSL1號程度: 中、中上(6-11) 男女不拘報名方式: FB留言時段: ：20:00～22:00 ===========================備註:徵長期球友, 場地共三面木質地板學校有飲水機機車可以停進學校（進門右手邊）汽車學校周邊停車格 顯示較少",
+        "reference_time": "2026-09-05T03:40:31.549Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:40:31.549Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "一場2026-09-05 20:00–22:00弘道國中；原文缺金額，price_options=[]；6–11級。",
+      "acceptable_analyses": []
+    },
+    {
+      "id": "post_b312e6c40110a3936f1b",
+      "categories": [
+        "non_recruitment"
+      ],
+      "context": {
+        "text": "［場地單次原價轉讓］2026/9/28（一） 教師節放假12:00-14:00@台北市大安運動中心3樓 一面羽球場1000元請注意大安運動中心羽球場禁止私人教學，意者請私訊",
+        "reference_time": "2026-09-05T03:43:21.185Z",
+        "reference_time_source": "scraped_at",
+        "published_at": null,
+        "scraped_at": "2026-09-05T03:43:21.185Z",
+        "timezone": "Asia/Taipei",
+        "is_truncated": false
+      },
+      "review": null,
+      "draft_expectation": "單次場地原價轉讓，非招募球友：is_recruitment=false、listings=[]。",
+      "acceptable_analyses": []
+    }
+  ]
+}

@@ -1,0 +1,607 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "analysis"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^post_[a-f0-9]{20}$"
+    },
+    "analysis": {
+      "$ref": "#/$defs/analysis"
+    }
+  },
+  "$defs": {
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "nullableInteger": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "quote"
+      ],
+      "properties": {
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "schedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "recurrence",
+        "start_time",
+        "end_time",
+        "timezone",
+        "end_day_offset"
+      ],
+      "properties": {
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "recurrence": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "frequency",
+                "weekdays"
+              ],
+              "properties": {
+                "frequency": {
+                  "const": "weekly"
+                },
+                "weekdays": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 6
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              }
+            }
+          ]
+        },
+        "start_time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "end_time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "timezone": {
+          "const": "Asia/Taipei"
+        },
+        "end_day_offset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "venue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "address",
+        "city",
+        "district"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "address": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "city": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "district": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "priceOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount",
+        "currency",
+        "duration_minutes",
+        "condition"
+      ],
+      "properties": {
+        "amount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "currency": {
+          "const": "TWD"
+        },
+        "duration_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "condition": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "min_level",
+        "max_level",
+        "beginner_friendly"
+      ],
+      "properties": {
+        "description": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "min_level": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_level": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "beginner_friendly": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "vacancies",
+        "capacity"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "open",
+            "full",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "vacancies": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "capacity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "registration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "methods",
+        "line_id",
+        "phone",
+        "instructions"
+      ],
+      "properties": {
+        "methods": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "facebook_comment",
+              "facebook_message",
+              "line",
+              "phone",
+              "url",
+              "other"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "line_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "phone": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "instructions": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "listing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "listing_index",
+        "team_name",
+        "schedule",
+        "venue",
+        "price_options",
+        "skill",
+        "availability",
+        "court_count",
+        "shuttlecock",
+        "registration",
+        "amenities",
+        "warnings"
+      ],
+      "properties": {
+        "listing_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "title": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "team_name": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "schedule": {
+          "$ref": "#/$defs/schedule"
+        },
+        "venue": {
+          "$ref": "#/$defs/venue"
+        },
+        "price_options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/priceOption"
+          }
+        },
+        "skill": {
+          "$ref": "#/$defs/skill"
+        },
+        "availability": {
+          "$ref": "#/$defs/availability"
+        },
+        "court_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "shuttlecock": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "registration": {
+          "$ref": "#/$defs/registration"
+        },
+        "amenities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "warnings": {
+          "$ref": "#/$defs/warnings"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "listing_type": {
+          "enum": [
+            "session",
+            "venue_rental",
+            "coaching",
+            "tournament"
+          ]
+        },
+        "play_format": {
+          "enum": [
+            "doubles",
+            "mens_doubles",
+            "womens_doubles",
+            "mixed_doubles",
+            "singles",
+            "mens_singles",
+            "womens_singles",
+            null
+          ]
+        },
+        "service_details": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/rentalDetails"
+            },
+            {
+              "$ref": "#/$defs/coachingDetails"
+            },
+            {
+              "$ref": "#/$defs/tournamentDetails"
+            }
+          ]
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "is_recruitment",
+        "listings",
+        "warnings"
+      ],
+      "properties": {
+        "is_recruitment": {
+          "type": "boolean"
+        },
+        "listings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/listing"
+          }
+        },
+        "warnings": {
+          "$ref": "#/$defs/warnings"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "is_recruitment": {
+                "const": false
+              }
+            },
+            "required": [
+              "is_recruitment"
+            ]
+          },
+          "then": {
+            "properties": {
+              "listings": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "not_recruitment",
+          "source_content_truncated",
+          "missing_date",
+          "missing_time",
+          "missing_venue",
+          "missing_price",
+          "missing_skill",
+          "missing_contact",
+          "ambiguous_date",
+          "ambiguous_pairing",
+          "relative_date_unanchored",
+          "source_conflict",
+          "insufficient_information",
+          "recurrence_unconfirmed",
+          "invalid_scraped_at",
+          "fingerprint_identity"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "rentalDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rental_kind",
+        "billing_unit",
+        "transfer_terms"
+      ],
+      "properties": {
+        "rental_kind": {
+          "enum": [
+            "rental",
+            "transfer",
+            "sublease",
+            null
+          ]
+        },
+        "billing_unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transfer_terms": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "coachingDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coach_name",
+        "audience",
+        "course_schedule",
+        "lesson_count",
+        "class_size",
+        "billing_unit"
+      ],
+      "properties": {
+        "coach_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "audience": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "course_schedule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lesson_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "class_size": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "billing_unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "tournamentDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_name",
+        "divisions",
+        "registration_deadline",
+        "event_end_date",
+        "billing_unit"
+      ],
+      "properties": {
+        "event_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "divisions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "registration_deadline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "event_end_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "billing_unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "$id": "urn:badminton:extraction:3"
+}
