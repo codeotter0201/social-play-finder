@@ -1,3 +1,9 @@
+export function courtCapacityLabel(listing) {
+  const courts = listing.court_count;
+  const capacity = listing.availability?.capacity;
+  return `場地：${courts == null ? '未標示' : `${courts} 面`}；總人數：${capacity == null ? '未標示' : `${capacity} 人`}`;
+}
+
 export function durationMinutes(schedule) {
   const {start_time:start, end_time:end, end_day_offset:offset} = schedule;
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start ?? '') || !/^([01]\d|2[0-3]):[0-5]\d$/.test(end ?? '') || ![0,1,'0','1'].includes(offset)) return null;

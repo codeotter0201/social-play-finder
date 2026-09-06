@@ -1,6 +1,6 @@
 import { PLAY_FORMATS, playFormatValues } from "./lib/listing-types.mjs";
-import { durationMinutes, durationLabel, hourlyPrice, hourlyPriceLabel } from "./lib/session-values.mjs";
-import { authorIdentity, buildSelectionCopy, listingDate, listingTime, MAX_SELECTED, MAX_COPY_CHARACTERS } from "./lib/selection.mjs";
+import { courtCapacityLabel, durationMinutes, durationLabel, hourlyPrice, hourlyPriceLabel } from "./lib/session-values.mjs";
+import { authorIdentity, listingProfileUrl, registrationText, buildSelectionCopy, listingDate, listingTime, MAX_SELECTED, MAX_COPY_CHARACTERS } from "./lib/selection.mjs";
 import { facebookProfileUrl } from "../../../src/shared/facebook-profile.mjs";
 import { filterRows } from "./lib/query-core.mjs";
 
@@ -234,10 +234,11 @@ export function mountBrowser(document = globalThis.document) {
         cell("時間", listingTime(listing), "time");
         cell("場館／地區", [listing.venue.name || "場館未標示", listing.venue.city, listing.venue.district, listing.venue.address].filter(Boolean).join(" · "));
         cell("玩法", PLAY_FORMATS[listing.play_format] || "", "play-format");
-        const skill = cell("程度");
+        const skill = cell("程度／用球／單場人數");
         const skillValue = node("div", undefined, "cell-value");
         skillValue.append(node("div", listing.skill.description || "程度未標示"));
         skillValue.append(node("div", `用球：${listing.shuttlecock?.trim() || "未標示"}`, "shuttlecock"));
+        skillValue.append(node("div", courtCapacityLabel(listing), "court-capacity"));
         skill.append(skillValue);
         cell("時數", durationLabel(listing.schedule), "duration");
         const price = cell("費用（元）", undefined, "price");
@@ -349,13 +350,13 @@ export function mountBrowser(document = globalThis.document) {
       const chosen = [...selectedIds].map(id => listingById.get(id));
       $("selection-panel").hidden = !chosen.length; $("selection-bar").hidden = !chosen.length;
       $("copy-fallback").hidden = true; $("copy-text").value = "";
-      const payload = buildSelectionCopy(chosen);
+      const payload = buildSelectionCopy(chosen, { anonymousSourceIds: anonymousIds });
       $("selection-count").textContent = `已選 ${chosen.length} / ${MAX_SELECTED} 場 · ${payload.characters.toLocaleString()} / ${MAX_COPY_CHARACTERS.toLocaleString()} 字元`;
       $("copy-selection").disabled = !payload.withinLimit;
       $("selection-message").textContent = payload.withinLimit ? "" : "內容超過 100,000 字元，請移除部分場次後再複製。原文不會被截斷。";
       $("selection-rows").replaceChildren();
       for (const listing of chosen) {
-        const contactText = [listing.registration.instructions, listing.registration.line_id && `LINE：${listing.registration.line_id}`, listing.registration.phone].filter(Boolean).join(" · ");
+        const contactText = registrationText(listing);
         const card = node("article", undefined, "selection-card");
         const heading = node("div", undefined, "selection-heading");
         heading.append(node("h3", `${listingDate(listing)} · ${listingTime(listing)} · ${listing.venue.name || "場館未標示"}`));
@@ -364,12 +365,13 @@ export function mountBrowser(document = globalThis.document) {
         remove.addEventListener("click", () => { selectedIds.delete(listing.listing_id); render(); }); heading.append(remove); card.append(heading);
         const facts = node("dl", undefined, "selection-facts");
         const venue = [listing.venue.name, listing.venue.city, listing.venue.district, listing.venue.address].filter(Boolean).join(" · ");
-        for (const [label, value] of [["場館／地址", venue || "未標示"], ["時數", durationLabel(listing.schedule)], ["費用條件", listing.price_display], ["每小時費用", hourlyPriceLabel(listing)], ["玩法", PLAY_FORMATS[listing.play_format] || "未標示"], ["程度", listing.skill.description || "未標示"], ["報名方式", contactText || "未標示"], ["作者", listing.source.author_name || "未標示"]]) {
+        for (const [label, value] of [["場館／地址", venue || "未標示"], ["時數", durationLabel(listing.schedule)], ["費用條件", listing.price_display], ["每小時費用", hourlyPriceLabel(listing)], ["玩法", PLAY_FORMATS[listing.play_format] || "未標示"], ["程度／用球／單場人數", `${listing.skill.description || "未標示"}\n用球：${listing.shuttlecock?.trim() || "未標示"}\n${courtCapacityLabel(listing)}`], ["報名方式", contactText || "未標示"], ["作者", listing.source.author_name || "未標示"]]) {
           facts.append(node("dt", label), node("dd", value));
         }
         card.append(facts);
         const contact = node("div", undefined, "links selection-links");
         appendSourceLinks(contact, listing);
+        appendLink(contact, listingProfileUrl(listing, anonymousIds.has(listing.source_post_id)), "作者個人檔案 ↗");
         card.append(contact);
         if (excludedAuthors.has(authorById.get(listing.listing_id))) card.append(node("p", "已排除此作者；此場仍保留於選取清單", "warning"));
         const details = node("details"); details.open = true; details.append(node("summary", "原文"), node("pre", listing.raw_text || "未提供原文")); card.append(details);
@@ -378,7 +380,7 @@ export function mountBrowser(document = globalThis.document) {
     }
     $("clear-selection").addEventListener("click", () => { selectedIds.clear(); render(); });
     $("copy-selection").addEventListener("click", async () => {
-      const payload = buildSelectionCopy([...selectedIds].map(id => listingById.get(id)));
+      const payload = buildSelectionCopy([...selectedIds].map(id => listingById.get(id)), { anonymousSourceIds: anonymousIds });
       if (!selectedIds.size || !payload.withinLimit) return;
       try {
         await document.defaultView.navigator.clipboard.writeText(payload.text);

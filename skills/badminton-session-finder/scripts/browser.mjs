@@ -98,6 +98,7 @@ table { width:100%; border-collapse:collapse; table-layout:fixed; }
 body:has(#selection-bar:not([hidden])) { padding-bottom:100px; }
 th,td { padding:15px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
 thead th { background:#fff; padding:13px 12px; color:var(--muted); font-size:12px; font-weight:500; }
+th.skill-heading button { white-space:normal; text-align:left; }
 th button { display:inline-flex; align-items:center; white-space:nowrap; border:0; padding:0; background:transparent; font-size:inherit; }
 thead th.duration-heading,thead th.fee-heading,thead th.hourly_rate-heading { text-align:right; }
 .date-group th { padding:9px 18px; background:#f0f4f0; color:#52665a; font-size:13px; font-weight:600; }
@@ -143,7 +144,7 @@ pre { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; background:#f5
 .table-note { color:var(--muted); font-size:12px; margin:0 0 14px; }
 .selection-facts { display:grid; grid-template-columns:90px minmax(0,1fr); gap:8px 16px; margin:12px 0; font-size:13px; }
 .selection-facts dt { color:var(--muted); }
-.selection-facts dd { margin:0; }
+.selection-facts dd { margin:0; white-space:pre-line; }
 .selection-links { margin:14px 0; gap:16px; }
 .selection-links a,.selection-links .unavailable-link { display:inline-flex; align-items:center; min-height:36px; padding:4px 8px; font-size:13px; border-radius:5px; }
 .selection-links a:hover { background:#f0f5f1; }
@@ -178,7 +179,7 @@ pre { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; background:#f5
 <label>日期與星期符合方式<select id="dateMode" title="日期與星期皆有設定時適用"><option value="any">符合其中一項</option><option value="all">同時符合兩項</option></select></label>
 </section><div class="controls"><label><input id="duplicates" type="checkbox">包含重複</label><button class="text-button" id="export-plan" type="button">匯出查詢設定</button>
 <button class="text-button" id="clear" type="reset">清除條件</button></div><div id="active-filters" aria-label="已套用的篩選條件"><div id="condition-filters"></div><div id="author-filters" aria-label="排除作者條件"></div></div></form>
-<p id="error" role="alert" hidden></p><div class="results-toolbar"><div id="summary" role="status" aria-live="polite"></div><div class="view-switch" role="group" aria-label="場次顯示方式"><button type="button" id="view-grouped" aria-pressed="false">日期分組</button><button type="button" id="view-flat" aria-pressed="true">不分組</button></div></div><main><p class="table-note" id="table-hint">點擊場次可選取比較，再次點擊取消。費用為最低已列方案，條件請見詳情。固定週期場次請向主揪確認日期。</p><div class="table-wrap"><table id="session-table"><colgroup><col class="date-col"><col class="time-col"><col class="venue-col"><col class="play-format-col"><col class="skill-col"><col class="duration-col"><col class="fee-col"><col class="hourly-rate-col"><col class="contact-col"></colgroup><thead><tr>${[["date","日期"],["time","時間"],["venue","場館／地區"],["play_format","玩法"],["skill","程度"],["duration","時數"],["fee","費用（元）"],["hourly_rate","每小時費用"]].map(([key,label]) => `<th scope="col" class="${key}-heading" aria-sort="none"><button type="button" data-sort="${key}" data-label="${label}">${label} ↕</button></th>`).join("")}<th scope="col">聯絡與原文</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p id="error" role="alert" hidden></p><div class="results-toolbar"><div id="summary" role="status" aria-live="polite"></div><div class="view-switch" role="group" aria-label="場次顯示方式"><button type="button" id="view-grouped" aria-pressed="false">日期分組</button><button type="button" id="view-flat" aria-pressed="true">不分組</button></div></div><main><p class="table-note" id="table-hint">點擊場次可選取比較，再次點擊取消。費用為最低已列方案，條件請見詳情。固定週期場次請向主揪確認日期。</p><div class="table-wrap"><table id="session-table"><colgroup><col class="date-col"><col class="time-col"><col class="venue-col"><col class="play-format-col"><col class="skill-col"><col class="duration-col"><col class="fee-col"><col class="hourly-rate-col"><col class="contact-col"></colgroup><thead><tr>${[["date","日期"],["time","時間"],["venue","場館／地區"],["play_format","玩法"],["skill","程度／用球／單場人數"],["duration","時數"],["fee","費用（元）"],["hourly_rate","每小時費用"]].map(([key,label]) => `<th scope="col" class="${key}-heading" aria-sort="none"><button type="button" data-sort="${key}" data-label="${label}">${label} ↕</button></th>`).join("")}<th scope="col">聯絡與原文</th></tr></thead><tbody id="rows"></tbody></table></div>
 <section id="selection-panel" hidden aria-label="已選場次比較"><h2>已選場次</h2><div id="selection-rows"></div></section>
 </main></div>
 <aside id="selection-bar" hidden aria-label="選取操作"><div class="selection-actions"><span id="selection-count"></span><button id="copy-selection" type="button">複製內容</button><button id="clear-selection" type="button" class="text-button">清空選取</button></div><p id="selection-message" role="status" aria-live="polite"></p><div id="copy-fallback" hidden><label for="copy-text">手動複製（全文已選取）</label><textarea id="copy-text" readonly></textarea></div></aside>

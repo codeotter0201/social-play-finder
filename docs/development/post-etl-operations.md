@@ -106,6 +106,26 @@ npm run badminton -- validate --run result/sessions
 
 瀏覽 `result/sessions/current/index.html`；頁面可直接以本機檔案開啟，不需伺服器。CLI 回傳的 `page`、`output`、`csv`、`report` 都指向同一不可變發布批次。`current` 原子切換，讀多個產物的程式須先解析一次 `current` 的真實目錄，再讀該目錄；不要在不同時間分別解析根目錄快捷連結。頁面內的 CSV 下載綁定該頁資料快照，重新發布後既有開啟頁面的下載仍屬原批次。
 
+## 缺少貼文網址的 HTML 診斷
+
+新擷取的可輸出貼文若缺少 `post_url`，原始 JSON 會附上 `missing_post_url_html`，以 gzip + Base64 無損保存解析當下的貼文卡片 HTML。這是頁面快照，不包含互動後才產生的 DOM 或事件處理器；舊批次不能回補當時 HTML。它不進入模型 context 或比較複製內容，原始 JSON／archive 仍保留。
+
+例如將原始 JSON 的第一篇診斷資料還原到本機檔案：
+
+```sh
+node --input-type=module - /path/to/raw.json /path/to/post.html <<'JS'
+import { readFile, writeFile } from 'node:fs/promises';
+import { gunzipSync } from 'node:zlib';
+const input = JSON.parse(await readFile(process.argv[2], 'utf8'));
+const post = input.posts.find(post => post.missing_post_url_html);
+if (!post) throw new Error('此批次沒有保存 HTML 診斷');
+const snapshot = post.missing_post_url_html;
+if (snapshot.encoding !== 'gzip-base64') throw new Error('不支援的 HTML 編碼');
+await writeFile(process.argv[3], gunzipSync(Buffer.from(snapshot.data, 'base64')));
+console.log({ author: post.author_name, scraped_at: post.scraped_at, file: process.argv[3] });
+JS
+```
+
 ## 地區資料集與匯入
 
 [資料集設定](../../datasets.json) 保存地區 ID、名稱與來源批次 ID。雙北來源歸於 `taipei`，台中來源歸於 `taichung`；各區目前的批次清單以設定檔為準。這是來源歸屬，不修改抽取的 `venue.city`，也不需要重跑既有 AI 分析。
