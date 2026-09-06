@@ -14,6 +14,7 @@ Use the repository's Node scripts for every deterministic transformation. Never 
 - For one or more raw Facebook export JSON files, read [references/extraction-mode.md](references/extraction-mode.md) and [references/output-contract.md](references/output-contract.md).
 - For questions over an existing `output_result.csv`, read [references/search-mode.md](references/search-mode.md) and [references/result-format.md](references/result-format.md).
 - When the user asks to organize and then search, finish extraction first and query the newly generated CSV in the same task.
+- When the user asks to update or publish the online session website, follow [the static website publishing procedure](../../docs/development/post-etl-operations.md#靜態網站發布). Local ETL publication does not update `site/index.html` or GitHub Pages. Validate the intended publication, update the snapshot, and commit/push within the user's existing authorization; verify the deployment before reporting the website as updated. Extraction alone does not imply an online deployment request.
 
 ## Classification
 

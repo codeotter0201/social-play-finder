@@ -91,6 +91,57 @@ npm run badminton -- validate --run result/sessions
 
 瀏覽 `result/sessions/current/index.html`；頁面可直接以本機檔案開啟，不需伺服器。CLI 回傳的 `page`、`output`、`csv`、`report` 都指向同一不可變發布批次。`current` 原子切換，讀多個產物的程式須先解析一次 `current` 的真實目錄，再讀該目錄；不要在不同時間分別解析根目錄快捷連結。頁面內的 CSV 下載綁定該頁資料快照，重新發布後既有開啟頁面的下載仍屬原批次。
 
+## 靜態網站發布
+
+此節是日常網站更新的操作依據；首次建立 repository 與啟用 Pages 見 [README](../../README.md#github-與靜態網站發布)。以下指令從專案根目錄執行，將資料庫及發布目錄換成此次實際使用的路徑。
+
+### 1. 完成本機發布
+
+先依前述抽取流程完成發布。`etl extract --out` 已發布此次結果時，可直接進入驗證；人工交接或需要獨立發布時執行：
+
+```sh
+npm run badminton -- etl publish --db result/facebook-posts.sqlite --out result/sessions
+```
+
+若發布範圍限定某個 handoff，加上 `--run <handoff-directory>`，保留原本的資料範圍。只修改頁面程式時，在相同發布命令加上 `--refresh`，重新產生 HTML。`npm run build` 只建置 Chrome 擴充功能，不會更新場次頁面。
+
+### 2. 驗證發布資料
+
+```sh
+npm run badminton -- validate --run result/sessions
+```
+
+檢查命令退出碼、JSON 摘要及該批 `run_report.json`。修正驗證錯誤後再更新網站；若發布為 partial，需依本次任務範圍確認是否發布已成功集合，並明列未完成部分，不能宣稱全量完成。格式驗證不取代抽取語意確認。
+
+### 3. 更新並檢查網站快照
+
+```sh
+npm run site:update -- result/sessions/current
+```
+
+此指令解析 `current` 後，把該不可變發布批次的實際 HTML 複製至 `site/index.html`，不重新抽取或產生頁面。驗證到複製期間避免切換同一發布目錄的 `current`；需要固定批次時，兩個指令都改用同一個 `releases/<publication_id>` 目錄。
+
+用瀏覽器開啟 `site/index.html`，確認場次、搜尋、篩選及 CSV 下載符合預期。快照內嵌頁面程式、完整發布資料與 CSV，包含原文、作者及聯絡資訊；選定快照即選定對外發布的資料。只複製此 HTML 即可使用主場次網站；其他三類資料檔不會由 `site:update` 複製。
+
+### 4. 提交並推送
+
+在本次工作已授權 commit／push 的範圍內執行；僅整理本機資料不代表要求上線。
+
+```sh
+git add site/index.html
+git diff --cached --stat
+git commit -m "Update session website"
+git push
+```
+
+提交前檢查暫存內容，保留無關工作。`result/`、`output/`、SQLite 與抽取中間產物繼續留在本機。若本次也修改網站產生器，將相關原始碼按任務範圍一併提交；只提交原始碼不會重新生成網站快照。
+
+### 5. 確認線上部署
+
+[Pages workflow](../../.github/workflows/pages.yml) 在 `main` 收到 `site/**` 或 workflow 本身的變更時觸發，也可從 Actions 手動執行 **Deploy site to GitHub Pages**。推送其他分支不會觸發這個自動部署流程。
+
+在 Actions 確認對應提交的 workflow 成功，從 `github-pages` environment 開啟網站，確認頁面資料與本次快照一致，再回報線上更新完成。若失敗，查看失敗步驟的記錄；尚未啟用 Pages 時，依 README 完成設定後重新執行。推送成功或本機 HTML 更新都不代表部署成功；無法查看線上狀態時，回報已完成的步驟與尚未驗證的部署狀態。
+
 ## 新觀察與版本選擇
 
 重新 import 新 raw、prepare 新交接目錄即可。相同邏輯 JSON（忽略物件鍵順序與排版）不再追加觀察；內容改變仍形成新觀察。最新觀察依合法擷取時間、寫入時間與觀察 ID 選擇；沒有合法擷取時間的觀察不能超越合法時間的觀察。

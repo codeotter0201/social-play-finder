@@ -97,16 +97,6 @@ git push -u origin main
 
 在 GitHub repository 的 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**。若首次推送時尚未啟用 Pages，啟用後到 Actions 手動執行 **Deploy site to GitHub Pages**。後續推送 `main` 的 `site/` 變更會自動部署；部署網址顯示在 Actions 的 `github-pages` environment。流程只上傳 `site/`。
 
-更新網站時，先完成本機 ETL 發布及驗證，再複製該次快照：
-
-```sh
-npm run badminton -- validate --run result/sessions-20260905-sol
-npm run site:update -- result/sessions-20260905-sol/current
-git add site/index.html
-git commit -m "Update session website"
-git push
-```
-
-將範例路徑換成實際發布目錄。`site:update` 複製符號連結指向的實際 HTML，不會重新抽取或重新產生頁面。若修改網站程式，先依操作指南執行 `etl publish --refresh` 再更新快照。GitHub Actions 直接部署已提交的快照，不需要本機資料庫或模型登入。
+日常更新依[靜態網站發布流程](docs/development/post-etl-operations.md#靜態網站發布)：本機 ETL 發布 → 驗證 → 更新網站快照 → commit／push → 確認部署。本機發布不會自動更新線上網站；GitHub Actions 直接部署已提交的 `site/`，不需要本機資料庫或模型登入。
 
 [GitHub Pages 自訂工作流程說明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
