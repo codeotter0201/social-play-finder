@@ -1,0 +1,163 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "interpretation",
+    "where",
+    "preferences",
+    "include"
+  ],
+  "properties": {
+    "interpretation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "where": {
+      "$ref": "#/$defs/node"
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "beginner_friendly",
+        "max_fee_twd",
+        "require_contactable"
+      ],
+      "properties": {
+        "beginner_friendly": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "max_fee_twd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "require_contactable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "include": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "duplicates",
+        "full",
+        "cancelled"
+      ],
+      "properties": {
+        "duplicates": {
+          "type": "boolean"
+        },
+        "full": {
+          "type": "boolean"
+        },
+        "cancelled": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "field": {
+      "enum": [
+        "date",
+        "weekday",
+        "recurrence_weekdays",
+        "start_time",
+        "end_time",
+        "city",
+        "district",
+        "venue_name",
+        "status",
+        "fee_min_twd",
+        "fee_max_twd",
+        "skill_min",
+        "skill_max",
+        "skill_description",
+        "beginner_friendly",
+        "contactability",
+        "registration_methods",
+        "dedupe_status",
+        "search_text",
+        "scraped_at",
+        "end_day_offset",
+        "author_url",
+        "play_format",
+        "listing_type"
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "op",
+        "value"
+      ],
+      "properties": {
+        "field": {
+          "$ref": "#/$defs/field"
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "neq",
+            "contains",
+            "in",
+            "lt",
+            "lte",
+            "gt",
+            "gte",
+            "includes_text",
+            "is_known"
+          ]
+        },
+        "value": {}
+      }
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "all"
+          ],
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "any"
+          ],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

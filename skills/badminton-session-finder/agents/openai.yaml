@@ -1,0 +1,4 @@
+interface:
+  display_name: "羽球場次整理與搜尋"
+  short_description: "Organize and find contactable badminton sessions"
+  default_prompt: "Use $badminton-session-finder to organize badminton recruitment exports or find actionable sessions from the resulting CSV."

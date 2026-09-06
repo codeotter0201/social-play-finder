@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facebook 社團貼文匯出器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">本機處理 · 零遙測</p>
+        <h1>社團貼文匯出器</h1>
+      </div>
+      <button id="help" class="link-button" type="button">使用責任</button>
+    </header>
+
+    <section id="notice" class="notice hidden" aria-live="polite"></section>
+
+    <section id="controls" class="panel">
+      <p><strong>自動捲動</strong></p>
+      <p class="muted">擴充功能會以短間隔向下捲動；背景分頁可能受 Chrome 節流而變慢。</p>
+      <label for="target-count">篇數目標
+        <input id="target-count" type="number" min="1" step="1" value="5" inputmode="numeric" required>
+        <span class="muted">預設 5 篇；達到目標、設定時限或其他停止條件時結束。</span>
+      </label>
+      <label for="no-new-limit">連續無新貼文輪數
+        <input id="no-new-limit" type="number" min="1" max="100" step="1" value="10" inputmode="numeric" required>
+        <span class="muted">預設 10 輪；發現新貼文卡片時會重新計數。</span>
+      </label>
+      <label for="max-duration-minutes">自動捲動時限（分鐘）
+        <input id="max-duration-minutes" type="number" min="1" max="1440" step="1" value="30" inputmode="numeric" required>
+        <span class="muted">預設 30 分鐘；時限到達會停止並保留已收集結果。</span>
+      </label>
+      <details class="settings-details">
+        <summary>低負載互動進階設定</summary>
+        <p class="muted">這些設定控制頁面互動節奏，不代表規避 Facebook 偵測或限制。</p>
+        <div class="settings-grid">
+          <label for="card-delay-min">卡片間隔最小值（ms）<input id="card-delay-min" type="number" min="100" max="60000" step="1" value="100" required></label>
+          <label for="card-delay-max">卡片間隔最大值（ms）<input id="card-delay-max" type="number" min="100" max="60000" step="1" value="250" required></label>
+          <label for="scroll-delay-min">捲動等待最小值（ms）<input id="scroll-delay-min" type="number" min="500" max="120000" step="1" value="500" required></label>
+          <label for="scroll-delay-max">捲動等待最大值（ms）<input id="scroll-delay-max" type="number" min="500" max="120000" step="1" value="900" required></label>
+          <label for="backoff-step">每輪增加等待（ms）<input id="backoff-step" type="number" min="0" max="60000" step="1" value="300" required></label>
+          <label for="backoff-max">最大額外等待（ms）<input id="backoff-max" type="number" min="0" max="300000" step="1" value="1500" required></label>
+          <label for="scroll-percent-min">捲動距離最小值（%）<input id="scroll-percent-min" type="number" min="10" max="100" step="1" value="70" required></label>
+          <label for="scroll-percent-max">捲動距離最大值（%）<input id="scroll-percent-max" type="number" min="10" max="100" step="1" value="95" required></label>
+        </div>
+        <button id="reset-settings" class="link-button" type="button">恢復預設值</button>
+      </details>
+      <div class="actions">
+        <button id="start" class="primary" type="button">開始擷取</button>
+      </div>
+    </section>
+
+    <section id="status" class="panel hidden" aria-live="polite">
+      <div class="status-heading"><strong id="phase"></strong><span id="progress"></span></div>
+      <p id="source" class="muted"></p>
+      <dl class="stats">
+        <div><dt>掃描</dt><dd id="scanned">0</dd></div>
+        <div><dt>成功</dt><dd id="exported">0</dd></div>
+        <div><dt>排除</dt><dd id="excluded">0</dd></div>
+        <div><dt>重複</dt><dd id="duplicates">0</dd></div>
+        <div><dt>失敗</dt><dd id="failed">0</dd></div>
+      </dl>
+      <p id="failure-details" class="muted hidden"></p>
+      <p id="no-new" class="muted hidden"></p>
+      <div class="actions">
+        <button id="go-source" class="hidden" type="button">前往來源分頁</button>
+        <button id="stop" class="danger hidden" type="button">停止</button>
+      </div>
+    </section>
+
+    <section id="result" class="panel hidden">
+      <div class="status-heading"><strong>批次結果</strong><span id="result-status" class="pill"></span></div>
+      <p id="result-reason"></p>
+      <div id="preview"></div>
+      <div class="actions wrap">
+        <button id="json" class="primary" type="button">下載 JSON</button>
+        <button id="csv" type="button">下載 CSV</button>
+        <button id="discard" class="link-button danger-text" type="button">捨棄結果</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="responsibility">
+    <form method="dialog">
+      <h2>使用責任</h2>
+      <p>只處理你有權查看的內容，並遵守 Facebook 條款、社團規則及適用的隱私法規。本工具不會替你判定特定擷取是否合法。</p>
+      <label class="checkbox-row"><input id="acknowledge" type="checkbox"> 我了解並願意遵守</label>
+      <div class="actions">
+        <button value="cancel">取消</button>
+        <button id="accept" class="primary" value="accept" disabled>確認</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="restart-confirmation">
+    <form method="dialog">
+      <h2>捨棄結果並開始擷取？</h2>
+      <p>已有先前的批次結果。確認後會捨棄目前結果，並依目前設定開始新的擷取。</p>
+      <div class="actions">
+        <button value="cancel" autofocus>取消</button>
+        <button class="primary" value="restart">捨棄並開始擷取</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="discard-confirmation">
+    <form method="dialog">
+      <h2>捨棄批次結果？</h2>
+      <p>此操作無法復原。</p>
+      <div class="actions">
+        <button value="cancel">取消</button>
+        <button id="confirm-discard" class="danger" value="discard">確認捨棄</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

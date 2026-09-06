@@ -1,0 +1,30 @@
+{
+  "name": "social-play-finder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "archive": "node scripts/post-archive/cli.mjs",
+    "badminton": "node skills/badminton-session-finder/scripts/cli.mjs",
+    "build": "node scripts/build.mjs",
+    "site:update": "node scripts/update-site.mjs",
+    "check": "tsc --noEmit && vitest run && npm run test:archive && npm run test:badminton && npm run build",
+    "test:archive": "node --test scripts/post-archive/archive.test.mjs",
+    "test:badminton": "node --test skills/badminton-session-finder/tests/*.test.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.2.7",
+    "@types/node": "20.19.11",
+    "esbuild": "0.28.2",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.7"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "sql.js": "^1.14.2"
+  },
+  "description": "Turn social posts into structured sports listings for finding games, court rentals, coaching, and tournaments."
+}
