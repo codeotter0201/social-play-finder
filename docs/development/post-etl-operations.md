@@ -44,7 +44,7 @@ npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/
 
 若只整理指定 raw 批次，prepare 加 `--batch-ids <batch_id,batch_id,...>`；它選這些批次出現的貼文 key，再從歷史庫選各 key 的最新觀察。extract 發布範圍取自本次 handoff；獨立 publish 可加 `--run result/my-handoff` 使用相同範圍。
 
-extract 分批呼叫以下 Codex 指令，預設一次執行一批；`--concurrency 1..8` 可指定同時執行的模型批次數。必要語意規則與 `{id,context}` 由 stdin 傳入；schema 透過 `--output-schema` 傳入，版本及模型設定保留於本機，不在提示重複傳送：
+extract 分批呼叫以下 Codex 指令，預設最多同時執行 20 批；`--concurrency 1..20` 可指定同時執行的模型批次數。必要語意規則與 `{id,context}` 由 stdin 傳入；schema 透過 `--output-schema` 傳入，版本及模型設定保留於本機，不在提示重複傳送：
 
 ```sh
 codex -a never exec --ignore-user-config --ephemeral -s read-only --skip-git-repo-check \
@@ -67,7 +67,7 @@ npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/
 npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/my-handoff --out result/sessions --batch-size 50 --concurrency 2 --max-attempts 3
 ```
 
-`--batch-size` 是單次模型呼叫的篇數；`--concurrency` 是同時處理的批次上限，預設 1、最多 8，不修改 handoff 的模型契約。完成的批次立即核對 ID、驗證並保存，空出的名額接續處理下一批，不必等待其他批次。協調者統一領取任務與串行存取 sql.js 歷史庫；不要以多個 extract 程序共用資料庫來增加併發。
+`--batch-size` 是單次模型呼叫的篇數；`--concurrency` 是同時處理的批次上限，預設 20、最多 20，不修改 handoff 的模型契約。完成的批次立即核對 ID、驗證並保存，空出的名額接續處理下一批，不必等待其他批次。協調者統一領取任務與串行存取 sql.js 歷史庫；不要以多個 extract 程序共用資料庫來增加併發。
 
 重試共用併發上限、每篇嘗試上限及整輪 `--limit`（不重複計入重試篇）。成功篇不重跑，缺少／重複／未知 ID 與語意錯誤沿用原驗證。不可重試的呼叫錯誤會停止派發，等待已領取的批次回傳或逾時並保存結果。SIGINT／SIGTERM 同樣停止派發並收尾；等待期間可能仍需一個模型逾時週期。所有批次收尾後才執行 `--out` 發布；部分失敗保留 partial 與錯誤，只有發布完成後才寫入最終 finished／stopped。資料庫或檔案保存失敗則停止並回報錯誤，不自動發布。
 

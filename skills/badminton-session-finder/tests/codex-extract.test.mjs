@@ -67,7 +67,7 @@ test("Codex extraction retries only invalid tasks, includes corrections, resumes
 
 test("Codex transport failure is durable and stops subsequent work; validation retries have an upper bound", async () => {
   const transport = await setup();
-  const stopped = await extractWithCodex({ ...transport, "batch-size": 1 }, { invoke() { throw new Error("model unavailable"); }, onProgress() {} });
+  const stopped = await extractWithCodex({ ...transport, concurrency: 1, "batch-size": 1 }, { invoke() { throw new Error("model unavailable"); }, onProgress() {} });
   assert.equal(stopped.phase, "stopped"); assert.equal(stopped.failed, 1); assert.equal(stopped.pending, 1);
   const invalid = await setup();
   let calls = 0;
@@ -105,7 +105,7 @@ test("model switch preserves completed provenance and extracts remaining work wi
 test("a transient batch timeout retries without stopping after the first completed batch", async () => {
   const options = await setup();
   let calls = 0;
-  const report = await extractWithCodex({ ...options, "batch-size": 1 }, { invoke(request) {
+  const report = await extractWithCodex({ ...options, concurrency: 1, "batch-size": 1 }, { invoke(request) {
     calls++;
     if (calls === 2) throw Object.assign(new Error("codex exec timed out"), { code: "CODEX_TIMEOUT" });
     return results(request);
@@ -305,8 +305,8 @@ test("SIGTERM stops dispatch and drains outstanding batches before publication",
 
 test("invalid concurrency is rejected before creating a run lock", async () => {
   const options = await setup();
-  for (const concurrency of [0, -1, 1.5, 9, "invalid"]) {
-    await assert.rejects(extractWithCodex({ ...options, concurrency }), /--concurrency must be 1..8/);
+  for (const concurrency of [0, -1, 1.5, 21, "invalid"]) {
+    await assert.rejects(extractWithCodex({ ...options, concurrency }), /--concurrency must be 1..20/);
   }
   await assert.rejects(readFile(join(options.run, "codex-extract.lock")), { code: "ENOENT" });
 });
@@ -366,4 +366,24 @@ test("concurrent batches preserve missing, duplicate and unknown result-ID rejec
     const status = await runEtl("status", { db: options.db });
     assert.ok(status.tasks.filter(task => task.status === "failed").every(task => task.error.toLowerCase().includes(kind)));
   }
+});
+
+
+test("default concurrency starts twenty batches and queues the remainder", { timeout: 10000 }, async () => {
+  const options = await setup(21);
+  const model = controlledModel();
+  const completion = extractWithCodex({ ...options, "batch-size": 1 }, { invoke: model.invoke, onProgress() {} });
+  const initial = [];
+  for (let index = 0; index < 20; index++) initial.push(await model.next());
+  assert.equal(model.calls, 20);
+  initial[0].succeed();
+  const remaining = await model.next();
+  assert.equal(model.calls, 21);
+  remaining.succeed();
+  for (const call of initial.slice(1)) call.succeed();
+  const report = await completion;
+  assert.equal(report.concurrency, 20);
+  assert.equal(model.peak, 20);
+  assert.equal(report.succeeded, 21);
+  assert.equal(report.running, 0);
 });

@@ -103,8 +103,8 @@ export async function extractWithCodex(options, { invoke = invokeCodex, onProgre
   if (hashId("contract", [current]) !== hashId("contract", [contract])) throw new Error("Contract changed; prepare a fresh handoff before extraction");
   codexArguments(contract.model_config, run, "schema", "output");
   const batchSize = Number(options["batch-size"] ?? contract.model_config.batch_size ?? 8);
-  const concurrency = Number(options.concurrency ?? 1);
-  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8) throw new Error("--concurrency must be 1..8");
+  const concurrency = Number(options.concurrency ?? 20);
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 20) throw new Error("--concurrency must be 1..20");
   const maxAttempts = Number(options["max-attempts"] ?? 3);
   const limit = Number(options.limit ?? Number.MAX_SAFE_INTEGER);
   if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 100) throw new Error("--batch-size must be 1..100");
