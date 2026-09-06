@@ -10,6 +10,7 @@
 ## 最終產物
 
 - `output_result.json`：無損來源、analysis、listings 與統計。
+- 新爬蟲的 `author_profile_url` 保留在原始來源及 listing.source；舊資料缺少此欄位仍可讀取，網站作者選單可由原 author_url 的數字 ID／自訂名稱格式建立個人檔案連結。不替換原作者網址或模型的報名方式。
 - `output_result.csv`：一列一場次的搜尋檢視。
 - `run_report.json`：來源、分析、listing、重複、警告與缺漏統計。
 

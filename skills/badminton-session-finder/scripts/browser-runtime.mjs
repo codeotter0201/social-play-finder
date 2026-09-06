@@ -1,6 +1,7 @@
 import { PLAY_FORMATS, playFormatValues } from "./lib/listing-types.mjs";
 import { durationMinutes, durationLabel, hourlyPrice, hourlyPriceLabel } from "./lib/session-values.mjs";
 import { authorIdentity, buildSelectionCopy, listingDate, listingTime, MAX_SELECTED, MAX_COPY_CHARACTERS } from "./lib/selection.mjs";
+import { facebookProfileUrl } from "../../../src/shared/facebook-profile.mjs";
 import { filterRows } from "./lib/query-core.mjs";
 
 export function browserPlan(values) {
@@ -251,7 +252,7 @@ export function mountBrowser(document = globalThis.document) {
         if (authorKey) {
           const trigger = node("button", listing.source.author_name || "作者未標示", "author-name author-trigger");
           trigger.type = "button"; trigger.setAttribute("aria-expanded", "false");
-          trigger.title = "作者過濾選項";
+          trigger.title = "作者選項";
           const popup = node("div", undefined, "author-popover"); popup.hidden = true; popup.id = `author-${row.listing_id}`;
           trigger.setAttribute("aria-controls", popup.id);
           trigger.addEventListener("click", () => {
@@ -264,6 +265,8 @@ export function mountBrowser(document = globalThis.document) {
           });
           const exclude = node("button", "過濾此作者", "subtle-button"); exclude.type = "button"; exclude.dataset.excludeAuthor = authorKey;
           exclude.addEventListener("click", () => { excludedAuthors.set(authorKey, listing.source.author_name || "未命名作者"); render(); });
+          const profile = facebookProfileUrl(listing.source.author_profile_url) || facebookProfileUrl(listing.source.author_url);
+          if (profile) appendLink(popup, profile, "前往 Facebook 個人檔案");
           popup.append(exclude); author.append(trigger, popup);
         } else author.append(node("span", listing.source.author_name || "作者未標示", "author-name"));
         contactLine.append(author);

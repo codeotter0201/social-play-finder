@@ -14,6 +14,7 @@ const POST_COLUMNS: (keyof Post)[] = [
   "post_id", "post_url", "author_name", "author_url", "is_anonymous", "content_text", "content_is_truncated",
   "published_time_raw", "published_at", "reaction_count_raw", "reaction_count", "comment_count_raw", "comment_count",
   "share_count_raw", "share_count", "media", "is_pinned", "scraped_at", "warnings",
+  "author_profile_url",
 ];
 const NUMERIC_OR_BOOLEAN = new Set([
   "batch_target_post_count", "batch_no_new_scan_limit", "batch_card_delay_min_ms", "batch_card_delay_max_ms",

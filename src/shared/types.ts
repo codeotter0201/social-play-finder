@@ -41,6 +41,8 @@ export interface Post {
   post_url: string | null;
   author_name: string | null;
   author_url: string | null;
+  /** Direct profile link derived from author_url; optional for older exports. */
+  author_profile_url?: string | null;
   is_anonymous: boolean | null;
   content_text: string;
   content_is_truncated: boolean | null;

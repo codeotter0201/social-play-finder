@@ -64,6 +64,7 @@ export class PostCollector {
 
 function mergeStablePost(first: Post, later: Post): Post {
   const merged: Post = { ...first };
+  if (merged.author_profile_url == null && later.author_profile_url != null && !merged.is_anonymous) merged.author_profile_url = later.author_profile_url;
   const fillOnlyKeys: (keyof Post)[] = [
     "post_id", "post_url", "author_name", "author_url", "is_anonymous", "published_time_raw", "published_at", "is_pinned",
   ];

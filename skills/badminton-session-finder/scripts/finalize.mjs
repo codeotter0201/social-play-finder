@@ -85,6 +85,7 @@ export function buildFinalized(joined, { publicationId = randomUUID(), generated
         post_url: post.links?.post?.raw_url ?? post.raw?.post_url ?? null,
         author_name: post.raw?.author_name ?? null,
         author_url: post.links?.author?.raw_url ?? post.raw?.author_url ?? null,
+        ...(post.raw?.author_profile_url !== undefined ? { author_profile_url: post.raw.author_profile_url } : {}),
         published_at: normalizeTimestamp(post.raw?.published_at),
         published_time_raw: post.raw?.published_time_raw ?? null,
         scraped_at: normalizeTimestamp(post.raw?.scraped_at),

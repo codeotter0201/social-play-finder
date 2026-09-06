@@ -12,6 +12,14 @@ function post(overrides: Partial<Post> = {}): Post {
 }
 
 describe("PostCollector", () => {
+  it("fills a missing profile URL for stable duplicates without replacing an existing one", () => {
+    const collector = new PostCollector();
+    collector.record(post());
+    collector.record(post({ author_profile_url: "https://www.facebook.com/profile.php?id=123" }));
+    collector.record(post({ author_profile_url: "https://www.facebook.com/different.name" }));
+    expect(collector.posts[0].author_profile_url).toBe("https://www.facebook.com/profile.php?id=123");
+    expect(collector.posts[0].author_url).toBeNull();
+  });
   it("deduplicates stable identity and merges only reliable later observations", () => {
     const collector = new PostCollector();
     expect(collector.record(post())).toBe("exported");

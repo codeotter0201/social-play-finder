@@ -125,6 +125,8 @@ tr[data-listing-id]:hover { background:#fcfdfb; }
 .author-trigger:hover { text-decoration:underline; text-underline-offset:3px; }
 .author-popover { position:fixed; z-index:12; padding:5px; border:1px solid var(--line); border-radius:7px; background:white; box-shadow:0 4px 16px #20342d18; }
 .author-popover button { border:0; }
+.author-popover a { display:block; padding:8px 12px; border-radius:7px; font-size:14px; text-decoration:none; }
+.author-popover a:hover { background:#eef4ef; }
 #scroll-navigation { position:fixed; right:16px; bottom:16px; z-index:10; display:flex; flex-direction:column; gap:6px; }
 #scroll-navigation button { width:40px; height:40px; padding:0; border:1px solid var(--line); border-radius:50%; background:#fffffff2; color:var(--accent); font-size:20px; box-shadow:0 2px 8px #20342d12; }
 #scroll-navigation button:hover { background:#edf3ee; border-color:#a8bcb0; }
