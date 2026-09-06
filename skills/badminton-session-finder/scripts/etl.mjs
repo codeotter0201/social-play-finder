@@ -7,14 +7,19 @@ import { extractionContract, canRefreshV3Publication } from "./lib/contract.mjs"
 import { hashId } from "./lib/ids.mjs";
 import { readJson, writeJson, writeJsonl } from "./lib/io.mjs";
 import { finalizeJoined } from "./finalize.mjs";
+import { readDatasets, getDataset, datasetPostKeys } from "../../../scripts/datasets.mjs";
 
-export async function prepareArchive(databasePath, outputDirectory, { modelConfig, postKey, batchIds, preserveSucceeded = false, rerun = false } = {}) {
+export async function prepareArchive(databasePath, outputDirectory, { modelConfig, postKey, batchIds, dataset: datasetId, datasetsPath, preserveSucceeded = false, rerun = false } = {}) {
   if (!modelConfig) throw new Error("Archive prepare requires --model-config <json> recording model, version, and settings used for this handoff");
+  if (datasetId && batchIds) throw new Error("Use --dataset or --batch-ids, not both");
+  const dataset = datasetId ? getDataset(await readDatasets(datasetsPath), datasetId, { requireBatches: true }) : null;
+  if (dataset) batchIds = dataset.batch_ids;
   const archive = await openPostArchive(databasePath);
   try {
     const contract = await extractionContract(modelConfig);
     const out = resolve(outputDirectory);
     const oldManifest = await readJson(join(out, "task_manifest.json")).catch((error) => { if (error.code !== "ENOENT") throw error; return null; });
+    if (oldManifest && JSON.stringify(oldManifest.dataset ?? null) !== JSON.stringify(dataset)) throw new Error("Dataset selection changed; choose a fresh handoff directory");
     if (oldManifest && (rerun || oldManifest.database_path !== archive.databasePath || hashId("contract", [oldManifest.contract]) !== hashId("contract", [contract]))) throw new Error("Existing handoff belongs to a different task/contract; choose a fresh --out directory");
     const tasks = taskStore(archive).prepare(contract, { postKey, batchIds, preserveSucceeded, rerun });
     if (oldManifest && hashId("ids", [oldManifest.task_ids]) !== hashId("ids", [tasks.map((task) => task.task_id)])) throw new Error("New observations change this handoff; choose a fresh --out directory (existing handoff preserved)");
@@ -26,6 +31,7 @@ export async function prepareArchive(databasePath, outputDirectory, { modelConfi
     const contractPath = await writeJson(join(out, "extraction_contract.json"), contract);
     const manifest = await writeJson(join(out, "task_manifest.json"), {
       version: 2, database_path: archive.databasePath, contract,
+      ...(dataset ? { dataset } : {}),
       selection: { batch_ids: batchIds ?? null, post_key: postKey ?? null, preserve_succeeded: preserveSucceeded },
       task_ids: tasks.map((task) => task.task_id), handoff_ids: oldManifest?.handoff_ids ?? pending.map((task) => task.task_id),
     });
@@ -96,7 +102,10 @@ export async function runEtl(action, options) {
   } finally { archive.close(); }
 }
 
-async function publishArchive(archive, store, outputDirectory, { beforeActivate, refresh = false, run: runDirectory } = {}) {
+async function publishArchive(archive, store, outputDirectory, { beforeActivate, refresh = false, run: runDirectory, dataset: datasetId, datasetsPath } = {}) {
+  if (datasetId && runDirectory) throw new Error("Use --dataset for the whole dataset or --run for a frozen handoff, not both");
+  const manifest = runDirectory ? await handoff(archive, store, runDirectory) : null;
+  const dataset = datasetId ? getDataset(await readDatasets(datasetsPath), datasetId, { requireBatches: true }) : manifest?.dataset ?? null;
   const out = resolve(outputDirectory);
   let previous = null;
   let previousRelease = null;
@@ -105,6 +114,7 @@ async function publishArchive(archive, store, outputDirectory, { beforeActivate,
     previous = await readJson(join(previousRelease, "output_result.json"));
   } catch (error) { if (error.code !== "ENOENT") throw error; }
   if (previous) {
+    if (previous.dataset && previous.dataset.id !== dataset?.id) throw new Error("Publication directory belongs to a different dataset; select its dataset or use a separate directory");
     const record = archive.rows("SELECT * FROM extraction_publications WHERE publication_id=$id AND output_directory=$out", { $id: previous.publication_id, $out: out })[0];
     if (!record) throw new Error("Current publication is not registered in this archive; choose a fresh output directory");
     // Reconcile interruption between pointer activation and the publication status write.
@@ -116,7 +126,7 @@ async function publishArchive(archive, store, outputDirectory, { beforeActivate,
   const posts = [];
   const batches = new Map();
   const states = [];
-  const selectedKeys = runDirectory ? new Set((await handoff(archive, store, runDirectory)).task_ids.map((id) => store.get(id).post_key)) : null;
+  const selectedKeys = manifest ? new Set(manifest.task_ids.map((id) => store.get(id).post_key)) : dataset ? datasetPostKeys(archive, dataset) : null;
   for (const observation of archive.latestAll()) {
     if (selectedKeys && !selectedKeys.has(observation.post_key)) continue;
     const task = targets.get(observation.post_key);
@@ -150,7 +160,7 @@ async function publishArchive(archive, store, outputDirectory, { beforeActivate,
     incomplete_ids: states.filter((state) => state.status !== "succeeded").map((state) => state.task_id ?? state.post_key),
     failed_ids: states.filter((state) => state.status === "failed").map((state) => state.task_id), states,
   };
-  const joined = { batches: [...batches.values()], posts, task_report: taskReport, join_report: { partial: taskReport.incomplete_ids.length > 0, missing_ids: taskReport.incomplete_ids } };
+  const joined = { ...(dataset ? { dataset } : {}), batches: [...batches.values()], posts, task_report: taskReport, join_report: { partial: taskReport.incomplete_ids.length > 0, missing_ids: taskReport.incomplete_ids } };
   if (previousRelease) {
     const oldJoined = await readJson(join(previousRelease, "joined_records.json"));
     if (!refresh && hashId("publication", [oldJoined]) === hashId("publication", [joined])) return { current: join(out, "current"), page: join(previousRelease, "index.html"), publication_id: previous.publication_id, reused_publication: true, partial: joined.join_report.partial, tasks: taskReport };

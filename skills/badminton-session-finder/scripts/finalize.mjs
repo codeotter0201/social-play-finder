@@ -141,6 +141,7 @@ export function buildFinalized(joined, { publicationId = randomUUID(), generated
     contactability: countBy(listings.map(({ contact }) => contact.contactability)),
   };
   const result = {
+    ...(joined.dataset ? { dataset: joined.dataset } : {}),
     schema_version: "badminton-output-2",
     publication_id: publicationId,
     generated_at: generatedAt,
@@ -162,18 +163,20 @@ export function buildFinalized(joined, { publicationId = randomUUID(), generated
     stats,
     warnings: countBy(allListings.flatMap(({ quality }) => quality.warnings)),
   };
+  const datasetHeaders = joined.dataset ? ["dataset_id", "dataset_name"] : [];
+  const datasetValues = joined.dataset ? [joined.dataset.id, joined.dataset.name] : [];
   const tableFiles = {};
   for (const {name, fields} of Object.values(SERVICE_TABLES)) {
     const records = tables[name];
-    tableFiles[name + ".json"] = JSON.stringify({schema_version: result.schema_version, publication_id: publicationId, generated_at: generatedAt, listings: records}, null, 2) + "\n";
+    tableFiles[name + ".json"] = JSON.stringify({...(joined.dataset ? {dataset: joined.dataset} : {}), schema_version: result.schema_version, publication_id: publicationId, generated_at: generatedAt, listings: records}, null, 2) + "\n";
     const headers = ["listing_id", "source_post_id", "listing_type", "play_format", "date", "start_time", "end_time", "end_day_offset", "recurrence_weekdays", "venue_name", "address", "court_count", ...fields, "price_options_json", "price_display", "registration_instructions", "line_id", "phone", "post_url", "author_url", "author_name", "raw_text", "group_name", "scraped_at", "event_group_id", "status", "dedupe_status", "contactability", "primary_contact_label", "primary_contact_url", "fee_min_twd", "fee_max_twd", "search_text"];
-    tableFiles[name + ".csv"] = serializeCsv(headers, records.map(item => [
+    tableFiles[name + ".csv"] = serializeCsv([...headers, ...datasetHeaders], records.map(item => [
       item.listing_id, item.source_post_id, item.listing_type, item.play_format, item.schedule.date, item.schedule.start_time, item.schedule.end_time, item.schedule.end_day_offset, item.schedule.recurrence?.weekdays ?? [],
       item.venue.name, item.venue.address, item.court_count, ...fields.map(field => item.service_details[field]),
-      JSON.stringify(item.price_options), item.price_display, item.registration.instructions, item.registration.line_id, item.registration.phone, item.source.post_url, item.source.author_url, item.source.author_name, item.raw_text, item.source.group_name, item.source.scraped_at, item.event_group_id, item.availability.status, item.dedupe.status, item.contact.contactability, item.contact.primary_label, item.contact.primary_url, item.fee_min_twd, item.fee_max_twd, item.search_text,
+      JSON.stringify(item.price_options), item.price_display, item.registration.instructions, item.registration.line_id, item.registration.phone, item.source.post_url, item.source.author_url, item.source.author_name, item.raw_text, item.source.group_name, item.source.scraped_at, item.event_group_id, item.availability.status, item.dedupe.status, item.contact.contactability, item.contact.primary_label, item.contact.primary_url, item.fee_min_twd, item.fee_max_twd, item.search_text, ...datasetValues,
     ]));
   }
-  return { result, report, csv: serializeCsv(CSV_HEADERS, listings.map(listingToCsvRow)), tableFiles };
+  return { result, report, csv: serializeCsv([...CSV_HEADERS, ...datasetHeaders], listings.map(item => [...listingToCsvRow(item), ...datasetValues])), tableFiles };
 }
 
 // Readers resolve current once and consume that immutable release. The pointer is

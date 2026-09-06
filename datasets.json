@@ -1,0 +1,19 @@
+{
+  "datasets": [
+    {
+      "id": "taipei",
+      "name": "雙北",
+      "batch_ids": [
+        "520461f3-d4da-4f69-b2b7-c0ee6f29a6f7",
+        "79bf84ca-9125-4b2c-9b4b-8349a565aac3",
+        "61d8168f-e400-48da-bf26-271f80533840",
+        "b29118ff-c638-4105-90cb-d20d62e2d008"
+      ]
+    },
+    {
+      "id": "taichung",
+      "name": "台中",
+      "batch_ids": []
+    }
+  ]
+}

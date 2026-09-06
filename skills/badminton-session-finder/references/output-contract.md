@@ -13,6 +13,8 @@
 - `output_result.csv`：一列一場次的搜尋檢視。
 - `run_report.json`：來源、分析、listing、重複、警告與缺漏統計。
 
+地區發布的主 JSON 與另外三類 JSON 帶有 `dataset={id,name,batch_ids}`，各 CSV 在末尾增加 `dataset_id`、`dataset_name`。這是操作人員指定的來源集合，不是模型抽取欄位，不代填 `venue.city`；未指定資料集的既有發布格式保持原樣。`joined_records.json` 與 archive handoff manifest 保存發布範圍的資料集快照。
+
 CSV 必須保留：
 
 - 來源：source file、batch/group、post/author ID 與 URL、時間、截斷與 warnings。

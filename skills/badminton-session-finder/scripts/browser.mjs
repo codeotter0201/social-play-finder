@@ -4,7 +4,13 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { parseCsv } from "./lib/csv.mjs";
 
-export async function buildBrowser(result, csv, outputPath) {
+export function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"})[char]);
+}
+
+export async function buildBrowser(result, csv, outputPath, { datasets = [] } = {}) {
+  const heading = result.dataset ? `${result.dataset.name}場次` : "羽球場次";
+  const navigation = datasets.length ? `<nav class="dataset-navigation" aria-label="地區"><a href="../index.html">所有地區</a>${datasets.map(dataset => `<a href="../${encodeURIComponent(dataset.id)}/index.html"${dataset.id === result.dataset?.id ? ' aria-current="page"' : ""}>${escapeHtml(dataset.name)}</a>`).join("")}</nav><p class="dataset-note">地區依來源資料集分類；實際地點請查看場館資訊。</p>` : "";
   const bundled = await build({
     stdin: { contents: 'import { mountBrowser } from "./browser-runtime.mjs"; mountBrowser();', resolveDir: fileURLToPath(new URL(".", import.meta.url)) },
     bundle: true, write: false, platform: "browser", format: "iife", target: "es2020",
@@ -13,7 +19,7 @@ export async function buildBrowser(result, csv, outputPath) {
   const favicon = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="32" y="51" text-anchor="middle" font-size="52">🏸</text></svg>');
   const script = bundled.outputFiles[0].text.replace(/<\/script/gi, "<\\/script");
   await writeFile(outputPath, `<!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>羽球場次瀏覽</title><link rel="icon" type="image/svg+xml" href="${favicon}">
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(heading)}瀏覽</title><link rel="icon" type="image/svg+xml" href="${favicon}">
 <style>
 :root { --ink:#20342d; --muted:#748078; --line:#e3e9e5; --accent:#217254; --paper:#fafbf9; }
 * { box-sizing:border-box; }
@@ -21,6 +27,10 @@ body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.6 system
 .page { max-width:1480px; margin:auto; padding:40px 32px 64px; }
 header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:28px; }
 h1 { margin:0; font-size:25px; font-weight:650; letter-spacing:.03em; }
+.dataset-navigation { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:8px; }
+.dataset-navigation a { padding:6px 12px; border:1px solid var(--line); border-radius:7px; text-decoration:none; }
+.dataset-navigation a[aria-current] { background:var(--accent); color:white; }
+.dataset-note { font-size:12px; color:var(--muted); margin:0 0 24px; }
 .brand-icon { display:inline-block; margin-right:10px; font-size:26px; vertical-align:-2px; }
 header p { margin:4px 0 0; font-size:12px; color:var(--muted); }
 a { color:var(--accent); text-underline-offset:4px; }
@@ -154,7 +164,7 @@ pre { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; background:#f5
  .duration,.price,.hourly-rate { text-align:left; } .detail:before { display:none; } .detail { display:block; border-top:1px solid var(--line); margin-top:9px; padding-top:10px; }
  .date-group th { display:block; background:transparent; border:0; padding:16px 0 4px; }
 }
-</style></head><body><div class="page"><header><div><h1><span aria-hidden="true" class="brand-icon">🏸</span>羽球場次</h1><p id="published"></p></div><a class="download" id="download-csv" download>下載 CSV ↓</a></header>
+</style></head><body><div class="page"><header><div><h1><span aria-hidden="true" class="brand-icon">🏸</span>${escapeHtml(heading)}</h1><p id="published"></p></div><a class="download" id="download-csv" download>下載 CSV ↓</a></header>${navigation}
 <form id="filters"><section class="filters">
 <label>搜尋<input id="q" type="search" placeholder="地區、場館、程度、關鍵字"></label>
 <label>玩法<select id="play_format"><option value="">全部玩法</option>${Object.entries(PLAY_FORMATS).map(([value, label]) => `<option value="${value}">${label}${["doubles","singles"].includes(value) ? "（全部）" : ""}</option>`).join("")}</select></label>

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { openPostArchive } from "./archive.mjs";
+import { importDataset } from "../datasets.mjs";
 
 const argv = process.argv.slice(2);
 const command = argv.shift();
@@ -15,7 +16,9 @@ const archive = await openPostArchive(options.db ?? "result/facebook-posts.sqlit
 try {
   if (command === "import") {
     if (options.positionals.length === 0) throw new Error("import requires at least one exported JSON file");
-    const result = archive.importFiles(options.positionals, { writtenAt: options.writtenAt });
+    const result = options.dataset
+      ? await importDataset(archive, options.positionals, options.dataset, { writtenAt: options.writtenAt })
+      : archive.importFiles(options.positionals, { writtenAt: options.writtenAt });
     print(result, options.json);
   } else if (command === "latest") {
     const result = archive.latest({ limit: options.limit, groupUrl: options.group });
@@ -40,7 +43,7 @@ function parseArgs(args) {
   for (let index = 0; index < args.length; index += 1) {
     const value = args[index];
     if (value === "--json") options.json = true;
-    else if (["--db", "--written-at", "--limit", "--group", "--url", "--key"].includes(value)) {
+    else if (["--db", "--written-at", "--limit", "--group", "--url", "--key", "--dataset"].includes(value)) {
       const next = args[index + 1];
       if (!next) throw new Error(`${value} requires a value`);
       index += 1;
@@ -74,7 +77,7 @@ function printObservations(observations, asJson) {
 
 function usage() {
   process.stdout.write(`Usage:
-  npm run archive -- import <export.json> [more.json ...] [--db result/facebook-posts.sqlite]
+  npm run archive -- import <export.json> [more.json ...] [--db result/facebook-posts.sqlite] [--dataset <id>]
   npm run archive -- latest [--db result/facebook-posts.sqlite] [--group <group-url>] [--limit 50] [--json]
   npm run archive -- history --url <post-url> [--db result/facebook-posts.sqlite] [--limit 50] [--json]
   npm run archive -- history --key <post-key> [--db result/facebook-posts.sqlite] [--limit 50] [--json]

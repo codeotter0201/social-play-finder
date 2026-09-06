@@ -8,11 +8,12 @@
     "badminton": "node skills/badminton-session-finder/scripts/cli.mjs",
     "build": "node scripts/build.mjs",
     "site:update": "node scripts/update-site.mjs",
-    "check": "tsc --noEmit && vitest run && npm run test:archive && npm run test:badminton && npm run build",
+    "check": "tsc --noEmit && vitest run && npm run test:archive && npm run test:badminton && npm run test:site && npm run build",
     "test:archive": "node --test scripts/post-archive/archive.test.mjs",
     "test:badminton": "node --test skills/badminton-session-finder/tests/*.test.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:site": "node --test scripts/datasets.test.mjs"
   },
   "devDependencies": {
     "@types/chrome": "0.2.7",
