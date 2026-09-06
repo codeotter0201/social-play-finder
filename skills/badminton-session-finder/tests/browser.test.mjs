@@ -43,9 +43,9 @@ test("A11,A12: real generated page uses full collection, clear, zero results, co
   input("fee", "0"); assert.equal(ids().length, 0); assert.match($("summary").textContent, /沒有符合/);
   input("fee", "250"); assert.equal(ids().length, 1);
   input("beginner", "true"); assert.equal(ids().length, 0);
-  $("filters").reset(); await new Promise((done) => queueMicrotask(done)); assert.equal(ids().length, 2);
+  $("filters").reset(); await new Promise((done) => setTimeout(done, 0)); assert.equal(ids().length, 2);
   input("q", "板橋"); assert.equal(ids().length, 1);
-  $("filters").reset(); await new Promise((done) => queueMicrotask(done));
+  $("filters").reset(); await new Promise((done) => setTimeout(done, 0));
   input("date", "2026-09-02"); input("weekday", "1");
   assert.equal(ids().length, 2); // one explicit date OR the weekly Monday group
   input("dateMode", "all"); assert.equal(ids().length, 0);
@@ -171,7 +171,7 @@ test("selection survives filters and exclusion; copy includes source once and cl
   let copied;
   Object.defineProperty(dom.window.navigator,"clipboard",{value:{writeText:async text=>{copied=text;}}});
   $("copy-selection").click();await new Promise(r=>setTimeout(r,0));assert.equal(copied,$("copy-text").value);
-  $("filters").reset();await new Promise(r=>queueMicrotask(r));assert.equal(d.querySelector('#rows tr[data-listing-id]').getAttribute('aria-selected'),'true');
+  $("filters").reset();await new Promise(r=>setTimeout(r,0));assert.equal(d.querySelector('#rows tr[data-listing-id]').getAttribute('aria-selected'),'true');
   $("clear-selection").click();assert.equal($("selection-bar").hidden,true);assert.equal(d.querySelectorAll('#rows tr.is-selected').length,0);
   dom.window.close();
 });
@@ -190,7 +190,7 @@ test("excluding author adds a removable condition, preserves chosen rows and exp
   assert.equal(d.querySelectorAll('#author-filters button').length,1);
   assert.match(d.getElementById('selection-rows').textContent,/已排除此作者/);
   d.querySelector('#author-filters button').click();assert.equal(d.querySelectorAll('#rows tr[data-listing-id]').length,2);
-  d.querySelector('[data-exclude-author]').click();d.getElementById('filters').reset();await new Promise(r=>queueMicrotask(r));
+  d.querySelector('[data-exclude-author]').click();d.getElementById('filters').reset();await new Promise(r=>setTimeout(r,0));
   assert.equal(d.querySelectorAll('#author-filters button').length,0);assert.equal(d.querySelectorAll('#rows tr.is-selected').length,1);
   const plan=browserPlan({full:true,cancelled:true,excludedAuthorUrls:[data.rows[0].author_url]});
   assert.deepEqual(filterRows(data.rows,plan).map(r=>r.listing_id),[data.rows[1].listing_id]);
@@ -291,7 +291,7 @@ test("active filter chips clear only their own condition and keep selected sessi
  assert.equal($('date').value,'2026-09-06');assert.equal($('weekday').value,'0');
  $('duplicates').checked=true;$('duplicates').dispatchEvent(new w.Event('change',{bubbles:true}));
  d.querySelector('[data-clear-filter="duplicates"]').click();assert.equal($('duplicates').checked,false);
- $('filters').reset();await new Promise(r=>queueMicrotask(r));
+ $('filters').reset();await new Promise(r=>setTimeout(r,0));
  assert.equal(d.querySelectorAll('.filter-chip').length,0);assert.equal(d.querySelectorAll('.selection-card').length,1);
  dom.window.close();
 });
@@ -376,5 +376,26 @@ test("skill cell stacks level and shuttlecock text, including missing values", a
     assert.deepEqual([...cell.firstElementChild.children].map(node => node.textContent), [listing.skill.description || '程度未標示', '用球：' + (index === 0 ? value : '未標示')]);
     assert.equal(cell.querySelector('img'), null);
   }
+  dom.window.close();
+});
+
+
+test("clear button restores unfiltered results and removes chips after native reset", async () => {
+  const f = await fixture();
+  const dom = new JSDOM(f.html, {runScripts: 'dangerously', url: 'https://local.example/'});
+  const d = dom.window.document;
+  const count = () => d.querySelectorAll('tr[data-listing-id]').length;
+  const initial = count();
+  d.querySelector('tr[data-listing-id]').click();
+  d.getElementById('fee').value = '0';
+  d.getElementById('fee').dispatchEvent(new dom.window.Event('input', {bubbles:true}));
+  assert.equal(count(), 0);
+  assert.ok(d.querySelector('[data-clear-filter="fee"]'));
+  d.getElementById('clear').click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(d.getElementById('fee').value, '');
+  assert.equal(d.getElementById('condition-filters').children.length, 0);
+  assert.equal(count(), initial);
+  assert.equal(d.querySelectorAll('tr.is-selected').length, 1);
   dom.window.close();
 });
