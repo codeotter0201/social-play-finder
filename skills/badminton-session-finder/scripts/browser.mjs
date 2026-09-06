@@ -28,6 +28,9 @@ a,button,summary { cursor:pointer; }
 button,input,select { font:inherit; color:inherit; }
 button,input,select { border:1px solid #d8e1da; border-radius:7px; background:white; }
 input,select { width:100%; min-width:0; height:40px; padding:8px 10px; }
+/* iOS native date/time appearance can override border-box and intrinsic sizing. */
+input[type=date],input[type=time] { -webkit-appearance:none; appearance:none; box-sizing:border-box; min-inline-size:0; max-width:100%; text-align:left; }
+input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value { display:block; min-height:22px; line-height:22px; padding:0; text-align:left; }
 input[type=checkbox] { width:auto; height:auto; accent-color:var(--accent); }
 button { padding:8px 12px; }
 button:hover { background:#eef4ef; }

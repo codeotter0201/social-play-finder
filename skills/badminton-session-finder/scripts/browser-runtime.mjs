@@ -397,7 +397,13 @@ export function mountBrowser(document = globalThis.document) {
     $("filters").addEventListener("submit", (event) => event.preventDefault());
     $("filters").addEventListener("input", render);
     $("filters").addEventListener("change", render);
-    $("filters").addEventListener("reset", () => { excludedAuthors.clear(); grouped = false; sorts.grouped = {field:null,descending:false}; sorts.flat = {field:null,descending:false}; queueMicrotask(render); });
+    $("filters").addEventListener("reset", () => {
+      excludedAuthors.clear(); grouped = false;
+      sorts.grouped = {field:null,descending:false}; sorts.flat = {field:null,descending:false};
+      // A user-triggered reset can flush microtasks before the native form reset finishes.
+      // Read the cleared controls in the next task, after the default action.
+      setTimeout(render, 0);
+    });
     $("export-plan").addEventListener("click", () => {
       const url = URL.createObjectURL(new Blob([JSON.stringify(browserPlan(values()), null, 2)], { type: "application/json" }));
       const anchor = node("a"); anchor.href = url; anchor.download = "query.json"; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
