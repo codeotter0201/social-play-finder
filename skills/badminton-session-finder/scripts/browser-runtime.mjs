@@ -280,7 +280,7 @@ export function mountBrowser(document = globalThis.document) {
           toggle.setAttribute("aria-expanded", String(!details.hidden));
           toggle.textContent = details.hidden ? "詳情與原文 ▸" : "詳情與原文 ▾";
         });
-        author.append(toggle);
+        detailCell.append(toggle);
         if (listing.source.stale) details.append(node("p", "來源已有新版，整理尚未更新", "warning"));
         if (row.dedupe_status !== "unique") details.append(node("p", row.dedupe_status === "duplicate" ? "確定重複" : "可能重複，請比對來源", "warning"));
         if (listing.play_format) details.append(node("p", `玩法：${PLAY_FORMATS[listing.play_format]}`));
