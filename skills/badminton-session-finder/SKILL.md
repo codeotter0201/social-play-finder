@@ -16,6 +16,10 @@ Use the repository's Node scripts for every deterministic transformation. Never 
 - When the user asks to organize and then search, finish extraction first and query the newly generated CSV in the same task.
 - When the user asks to update or publish the online session website, follow [the static website publishing procedure](../../docs/development/post-etl-operations.md#靜態網站發布). Local ETL publication does not update `site/index.html` or GitHub Pages. Validate the intended publication, update the snapshot, and commit/push within the user's existing authorization; verify the deployment before reporting the website as updated. Extraction alone does not imply an online deployment request.
 
+## Regional datasets
+
+For regional imports and publication, read [the dataset operations](../../docs/development/post-etl-operations.md#地區資料集與匯入). Use the configured dataset ID when importing and preparing; source membership is operator metadata, never infer venue.city from it. Publish each dataset to its own directory and update its site snapshot through the shared updater. Do not send existing successful analyses to the model merely to add a dataset label. Empty datasets have an unpublished page, not another region's results.
+
 ## Classification
 
 For every new listing, classify listing_type as session, venue_rental, coaching, or tournament, then fill the matching service_details and a single nullable play_format. Read extraction-mode.md and its examples through the extraction route above. Existing unclassified records stay in the session view; never silently reclassify stored results. Other types publish to separate JSON/CSV tables and do not appear in the session browser.

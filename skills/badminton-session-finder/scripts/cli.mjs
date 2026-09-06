@@ -12,11 +12,11 @@ import { evaluateQuality, validateRun } from "./validate.mjs";
 function usage() {
   return `Usage:
   npm run badminton -- prepare <raw.json> [more.json ...] --out <result-directory> [--model-config <model.json>]
-  npm run badminton -- prepare --db <archive.sqlite> --model-config <model.json> --out <handoff-directory> [--batch-ids <id,id,...>] [--post-key <key>] [--preserve-succeeded] [--rerun]
-  npm run badminton -- etl extract --db <archive.sqlite> --run <handoff-directory> [--out <publication-directory>] [--batch-size 8] [--max-attempts 3] [--retry-failed] [--limit <posts>]
+  npm run badminton -- prepare --db <archive.sqlite> --model-config <model.json> --out <handoff-directory> [--dataset <id> | --batch-ids <id,id,...>] [--post-key <key>] [--preserve-succeeded] [--rerun]
+  npm run badminton -- etl extract --db <archive.sqlite> --run <handoff-directory> [--out <publication-directory>] [--batch-size 8] [--concurrency 20] [--max-attempts 3] [--retry-failed] [--limit <posts>]
   npm run badminton -- etl start --db <archive.sqlite> --run <handoff-directory>
   npm run badminton -- etl accept --db <archive.sqlite> --run <handoff-directory> --analysis <results.jsonl>
-  npm run badminton -- etl publish --db <archive.sqlite> --out <publication-directory> [--run <handoff-directory>] [--refresh]
+  npm run badminton -- etl publish --db <archive.sqlite> --out <publication-directory> [--dataset <id> | --run <handoff-directory>] [--refresh]
   npm run badminton -- etl status --db <archive.sqlite>
   npm run badminton -- etl retry --db <archive.sqlite> [--id <task-id> | --failed]
   npm run badminton -- etl recover --db <archive.sqlite> [--id <task-id>]
@@ -61,11 +61,13 @@ async function main() {
     if (!options.out || (!positional.length && !options.db)) throw new Error("prepare requires raw JSON inputs or --db, and --out");
     const modelConfig = options["model-config"] ? await readJson(options["model-config"]) : undefined;
     if (options.db && positional.length) throw new Error("Import raw files with archive import, then prepare --db (do not mix input modes)");
+    if (options.dataset && !options.db) throw new Error("--dataset requires archive prepare --db");
     result = options.db
-      ? await prepareArchive(options.db, options.out, { modelConfig, postKey: options["post-key"], batchIds: options["batch-ids"]?.split(","), preserveSucceeded: Boolean(options["preserve-succeeded"]), rerun: Boolean(options.rerun) })
+      ? await prepareArchive(options.db, options.out, { modelConfig, dataset: options.dataset, postKey: options["post-key"], batchIds: options["batch-ids"]?.split(","), preserveSucceeded: Boolean(options["preserve-succeeded"]), rerun: Boolean(options.rerun) })
       : await prepareSources(positional, options.out, { modelConfig });
   } else if (command === "etl") {
     const action = positional[0];
+    if (options.dataset && action !== "publish") throw new Error("Use --dataset in prepare; etl extract inherits the handoff dataset");
     if (!options.db) throw new Error("etl requires --db");
     if (["start", "accept", "extract"].includes(action) && !options.run) throw new Error(`${action} requires --run`);
     if (action === "accept" && !options.analysis) throw new Error("accept requires --analysis");

@@ -4,6 +4,8 @@
 
 ## 擷取與匯入
 
+要更新雙北／台中分區網站時，匯入請使用下方[地區資料集與匯入](#地區資料集與匯入)的 `--dataset` 流程；本節未指定地區的指令仍可用於一般本機整理。
+
 先依[專案首頁](../../README.md#開發)安裝依賴並執行 npm run build，再載入擴充功能：
 
 1. 開啟 chrome://extensions，啟用「開發人員模式」。
@@ -42,7 +44,7 @@ npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/
 
 若只整理指定 raw 批次，prepare 加 `--batch-ids <batch_id,batch_id,...>`；它選這些批次出現的貼文 key，再從歷史庫選各 key 的最新觀察。extract 發布範圍取自本次 handoff；獨立 publish 可加 `--run result/my-handoff` 使用相同範圍。
 
-extract 依序分批呼叫以下 Codex 指令，必要語意規則與 `{id,context}` 由 stdin 傳入；schema 透過 `--output-schema` 傳入，版本及模型設定保留於本機，不在提示重複傳送，沒有多 agent 並行：
+extract 分批呼叫以下 Codex 指令，預設最多同時執行 20 批；`--concurrency 1..20` 可指定同時執行的模型批次數。必要語意規則與 `{id,context}` 由 stdin 傳入；schema 透過 `--output-schema` 傳入，版本及模型設定保留於本機，不在提示重複傳送：
 
 ```sh
 codex -a never exec --ignore-user-config --ephemeral -s read-only --skip-git-repo-check \
@@ -59,7 +61,19 @@ codex -a never exec --ignore-user-config --ephemeral -s read-only --skip-git-rep
 npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/my-handoff --out result/sessions --retry-failed --max-attempts 3
 ```
 
-若程序被強制中止，先確認 `codex-extract.lock` 記錄的 PID 已結束，移除該殘留鎖，再依下方 recover 流程重排處理中任務。`--limit <篇數>` 可用於先跑小批驗證；不會把尚未抽取的貼文當作已完成。
+### 多批非同步抽取
+
+```bash
+npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/my-handoff --out result/sessions --batch-size 50 --concurrency 2 --max-attempts 3
+```
+
+`--batch-size` 是單次模型呼叫的篇數；`--concurrency` 是同時處理的批次上限，預設 20、最多 20，不修改 handoff 的模型契約。完成的批次立即核對 ID、驗證並保存，空出的名額接續處理下一批，不必等待其他批次。協調者統一領取任務與串行存取 sql.js 歷史庫；不要以多個 extract 程序共用資料庫來增加併發。
+
+重試共用併發上限、每篇嘗試上限及整輪 `--limit`（不重複計入重試篇）。成功篇不重跑，缺少／重複／未知 ID 與語意錯誤沿用原驗證。不可重試的呼叫錯誤會停止派發，等待已領取的批次回傳或逾時並保存結果。SIGINT／SIGTERM 同樣停止派發並收尾；等待期間可能仍需一個模型逾時週期。所有批次收尾後才執行 `--out` 發布；部分失敗保留 partial 與錯誤，只有發布完成後才寫入最終 finished／stopped。資料庫或檔案保存失敗則停止並回報錯誤，不自動發布。
+
+`codex_progress.json` 由單一寫入者以原子替換更新，包含 concurrency、running_batches、active_batches（各批 ID、篇數、階段、起始時間、耗時與最近事件）、retry_pending（可重試失敗篇）、exhausted（已達嘗試上限的未完成篇），以及整輪 started_at／elapsed_seconds。原 batch_started_at／batch_elapsed_seconds／last_event 欄位表示最早仍在途的批次，無在途批次時為 null。每批目錄的 batch.json 保存任務 ID 與 attempt、模型耗時、驗證保存耗時與完成時間，供後續 benchmark 使用；尚未量測加速比例。
+
+若程序被強制中止，先確認 `codex-extract.lock` 記錄的 PID 與該輪啟動的模型子程序都已結束，移除該殘留鎖，再依下方 recover 流程重排處理中任務。`--limit <篇數>` 可用於先跑小批驗證；不會把尚未抽取的貼文當作已完成。
 
 ## 人工 JSONL 交接
 
@@ -92,56 +106,64 @@ npm run badminton -- validate --run result/sessions
 
 瀏覽 `result/sessions/current/index.html`；頁面可直接以本機檔案開啟，不需伺服器。CLI 回傳的 `page`、`output`、`csv`、`report` 都指向同一不可變發布批次。`current` 原子切換，讀多個產物的程式須先解析一次 `current` 的真實目錄，再讀該目錄；不要在不同時間分別解析根目錄快捷連結。頁面內的 CSV 下載綁定該頁資料快照，重新發布後既有開啟頁面的下載仍屬原批次。
 
+## 地區資料集與匯入
+
+[資料集設定](../../datasets.json) 保存地區 ID、名稱與來源批次 ID。雙北來源歸於 `taipei`，台中來源歸於 `taichung`；各區目前的批次清單以設定檔為準。這是來源歸屬，不修改抽取的 `venue.city`，也不需要重跑既有 AI 分析。
+
+以同一個 SQLite 保存各區資料。匯入時指定地區，成功後會將批次累加到設定中；同批次重送可重入，同一批次不可改歸另一區。未指定 `--dataset` 的既有 archive import 保持原行為，但不會自動歸區。請使用相同資料庫依序執行匯入；若資料庫已匯入但設定寫入失敗，修正檔案寫入問題後重送相同命令即可。
+
+```sh
+npm run archive -- import /path/to/taichung-1.json /path/to/taichung-2.json /path/to/taichung-3.json /path/to/taichung-4.json --db result/facebook-posts.sqlite --dataset taichung
+npm run badminton -- prepare --db result/facebook-posts.sqlite --dataset taichung --model-config skills/badminton-session-finder/codex-model.json --out result/taichung-handoff-001
+npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/taichung-handoff-001 --out result/taichung
+```
+
+prepare 凍結當時地區批次與任務範圍；新批次加入後使用新的 handoff 目錄。extract 的自動發布繼承 handoff 歸屬。資料集依批次找出曾出現的貼文 key，再沿用歷史庫各 key 的最新觀察；同篇貼文若分別出現在不同地區批次，可同時屬於兩個來源集合。未設定批次的地區會拒絕 prepare／publish，不會退回處理整個資料庫。
+
 ## 靜態網站發布
 
-此節是日常網站更新的操作依據；首次建立 repository 與啟用 Pages 見 [README](../../README.md#github-與靜態網站發布)。以下指令從專案根目錄執行，將資料庫及發布目錄換成此次實際使用的路徑。
+首次建立 repository 與啟用 Pages 見 [README](../../README.md#github-與靜態網站發布)。網站使用同一套產生器，根目錄是地區入口，`site/taipei/index.html` 與 `site/taichung/index.html` 各自內嵌該區資料。台中尚未發布時顯示說明頁，不顯示雙北資料或假場次。
 
-### 1. 完成本機發布
+### 1. 發布選定地區
 
-先依前述抽取流程完成發布。`etl extract --out` 已發布此次結果時，可直接進入驗證；人工交接或需要獨立發布時執行：
-
-```sh
-npm run badminton -- etl publish --db result/facebook-posts.sqlite --out result/sessions
-```
-
-若發布範圍限定某個 handoff，加上 `--run <handoff-directory>`，保留原本的資料範圍。只修改頁面程式時，在相同發布命令加上 `--refresh`，重新產生 HTML。`npm run build` 只建置 Chrome 擴充功能，不會更新場次頁面。
-
-### 2. 驗證發布資料
+既有雙北發布目錄繼續沿用，台中使用自己的目錄：
 
 ```sh
-npm run badminton -- validate --run result/sessions
+npm run badminton -- etl publish --db result/facebook-posts.sqlite --dataset taipei --out result/sessions-20260905-sol --refresh
+npm run badminton -- etl publish --db result/facebook-posts.sqlite --dataset taichung --out result/taichung --refresh
 ```
 
-檢查命令退出碼、JSON 摘要及該批 `run_report.json`。修正驗證錯誤後再更新網站；若發布為 partial，需依本次任務範圍確認是否發布已成功集合，並明列未完成部分，不能宣稱全量完成。格式驗證不取代抽取語意確認。
+以上為兩個獨立範例，只執行已有資料且要更新的地區。`--dataset` 選取該區累積批次；若只發布某次 handoff 的固定範圍，用 `--run <handoff-directory>` 取代 `--dataset`。同一命令不能混用兩者。每區使用不同發布目錄，已有地區歸屬的目錄拒絕其他區覆蓋。既有未標記發布可用 `--dataset` 加上來源歸屬。
 
-### 3. 更新並檢查網站快照
+頁面程式更新時使用 `--refresh` 重建各個已發布地區，不重新呼叫模型。`npm run build` 只建置擴充功能。發布 JSON 保存 `dataset={id,name,batch_ids}`；主表及另外三類 CSV 帶有 `dataset_id`、`dataset_name`，場館縣市仍保留原抽取值。
+
+### 2. 驗證與更新快照
 
 ```sh
-npm run site:update -- result/sessions/current
+npm run badminton -- validate --run result/sessions-20260905-sol
+npm run site:update -- result/sessions-20260905-sol/current
 ```
 
-此指令解析 `current` 後，把該不可變發布批次的實際 HTML 複製至 `site/index.html`，不重新抽取或產生頁面。驗證到複製期間避免切換同一發布目錄的 `current`；需要固定批次時，兩個指令都改用同一個 `releases/<publication_id>` 目錄。
+更新台中時將兩個路徑改成 `result/taichung` 與 `result/taichung/current`。檢查退出碼、JSON 摘要及該批 run_report；修正驗證錯誤後再更新。若發布為 partial，依本次任務範圍決定是否發布成功集合，並明列未完成部分。格式驗證不取代抽取語意確認。
 
-用瀏覽器開啟 `site/index.html`，確認場次、搜尋、篩選及 CSV 下載符合預期。快照內嵌頁面程式、完整發布資料與 CSV，包含原文、作者及聯絡資訊；選定快照即選定對外發布的資料。只複製此 HTML 即可使用主場次網站；其他三類資料檔不會由 `site:update` 複製。
+`site:update` 解析一次發布目錄並再次驗證，從已發布 JSON／CSV 透過共用產生器建立地區 HTML，加入相對路徑的地區切換，再更新入口及未發布地區說明頁。它依發布中的 dataset 決定目的地，不重新抽取，也不覆寫其他區已發布 HTML。資料集設定增加地區後，需逐區更新快照，讓各頁切換連結包含新地區。
 
-### 4. 提交並推送
+驗證至更新期間避免其他程序切換 current；要固定批次時，兩個指令都使用同一個 `releases/<publication_id>`。開啟 `site/index.html`，檢查地區入口、切換、篩選、選取與 CSV 下載。每個地區頁仍可單獨開啟；分享地區切換功能時需提供整個 site 目錄。頁面含原文、作者及聯絡資訊，選定快照即選定公開資料。
+
+### 3. 提交、推送與確認部署
 
 在本次工作已授權 commit／push 的範圍內執行；僅整理本機資料不代表要求上線。
 
 ```sh
-git add site/index.html
+git add datasets.json site/
 git diff --cached --stat
-git commit -m "Update session website"
+git commit -m "Update regional session website"
 git push
 ```
 
-提交前檢查暫存內容，保留無關工作。`result/`、`output/`、SQLite 與抽取中間產物繼續留在本機。若本次也修改網站產生器，將相關原始碼按任務範圍一併提交；只提交原始碼不會重新生成網站快照。
+提交前確認沒有混入無關工作；result、output、SQLite 與抽取中間產物留在本機。網站產生器有修改時按任務範圍一併提交。
 
-### 5. 確認線上部署
-
-[Pages workflow](../../.github/workflows/pages.yml) 在 `main` 收到 `site/**` 或 workflow 本身的變更時觸發，也可從 Actions 手動執行 **Deploy site to GitHub Pages**。推送其他分支不會觸發這個自動部署流程。
-
-在 Actions 確認對應提交的 workflow 成功，從 `github-pages` environment 開啟網站，確認頁面資料與本次快照一致，再回報線上更新完成。若失敗，查看失敗步驟的記錄；尚未啟用 Pages 時，依 README 完成設定後重新執行。推送成功或本機 HTML 更新都不代表部署成功；無法查看線上狀態時，回報已完成的步驟與尚未驗證的部署狀態。
+[Pages workflow](../../.github/workflows/pages.yml) 在 main 收到 site 或 workflow 變更時部署整個 site，也可手動執行 **Deploy site to GitHub Pages**。確認對應提交的 workflow 成功，從 github-pages environment 開啟網站，確認入口及各區資料後才回報上線完成；推送其他分支不會自動部署。部署失敗時查看失敗步驟，無法查看線上狀態時明列尚未驗證。
 
 ## 新觀察與版本選擇
 

@@ -169,6 +169,7 @@ stopped 以及已有有效資料的 failed 批次可匯出部分結果，但預�
 ### 8.3 作者
 
 - 找到具名作者時保留顯示名稱與可取得的正規作者網址。
+- 另存 author_profile_url：依作者原連結的明確格式建立個人檔案連結。社團 user/ID、profile.php?id、people/name/ID 與數字路徑使用 profile.php?id；自訂名稱沿用原路徑，不以顯示姓名猜測。匿名或不支援的網址為 null，舊匯出允許缺少此欄位。JSON／CSV 保存此欄位，原 author_url 保持原樣；不發出額外請求查詢帳號名稱或驗證連結可達性。
 - Facebook 明確標示匿名時，author_name 保留頁面匿名標籤、author_url 為 null、is_anonymous 為 true。
 - 明確具名為 false，無法可靠判定為 null。
 - 不得嘗試推測匿名貼文的真實作者。

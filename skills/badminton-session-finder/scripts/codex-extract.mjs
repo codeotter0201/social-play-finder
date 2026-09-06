@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
-import { mkdir, readFile, open, unlink } from "node:fs/promises";
+import { mkdir, readFile, open, unlink, rename } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { openPostArchive } from "../../../scripts/post-archive/archive.mjs";
@@ -103,6 +103,8 @@ export async function extractWithCodex(options, { invoke = invokeCodex, onProgre
   if (hashId("contract", [current]) !== hashId("contract", [contract])) throw new Error("Contract changed; prepare a fresh handoff before extraction");
   codexArguments(contract.model_config, run, "schema", "output");
   const batchSize = Number(options["batch-size"] ?? contract.model_config.batch_size ?? 8);
+  const concurrency = Number(options.concurrency ?? 20);
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 20) throw new Error("--concurrency must be 1..20");
   const maxAttempts = Number(options["max-attempts"] ?? 3);
   const limit = Number(options.limit ?? Number.MAX_SAFE_INTEGER);
   if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 100) throw new Error("--batch-size must be 1..100");
@@ -113,23 +115,133 @@ export async function extractWithCodex(options, { invoke = invokeCodex, onProgre
   await lock.writeFile(JSON.stringify({ pid: process.pid, started_at: new Date().toISOString() }));
   const touched = new Set();
   const retryEligible = new Set();
+  const active = new Map();
+  const startedAt = new Date().toISOString();
   let batches = 0;
   let stoppedError = null;
-  let activity = {};
-  let batchStarted = null;
-  const withStore = async (callback) => {
-    const archive = await openPostArchive(db);
-    try { return callback(taskStore(archive), archive); } finally { archive.close(); }
+  let fatalError = null;
+  let phase = "started";
+  let publication;
+  // sql.js loads and replaces a whole database snapshot. Serialize reads as well
+  // as writes, including claims and heartbeat snapshots, within this runner.
+  let storeTail = Promise.resolve();
+  const withStore = (callback) => {
+    const operation = storeTail.then(async () => {
+      const archive = await openPostArchive(db);
+      try { return callback(taskStore(archive), archive); } finally { archive.close(); }
+    });
+    storeTail = operation.catch(() => {});
+    return operation;
   };
   const snapshot = () => withStore((store) => manifest.task_ids.map((id) => store.get(id)));
-  const progress = async (phase) => {
-    const tasks = await snapshot();
-    const counts = Object.fromEntries(["pending", "running", "succeeded", "failed"].map((status) => [status, tasks.filter((task) => task.status === status).length]));
-    const value = { updated_at: new Date().toISOString(), phase, model: contract.model_config.model,
-      reasoning: contract.model_config.model_reasoning_effort, service_tier: contract.model_config.service_tier,
-      total: tasks.length, ...counts, batches, batch_size: batchSize, batch_started_at: batchStarted, batch_elapsed_seconds: batchStarted ? Math.floor((Date.now() - Date.parse(batchStarted)) / 1000) : null, ...activity, error: stoppedError, partial: tasks.some((task) => task.status !== "succeeded") };
-    await writeJson(join(run, "codex_progress.json"), value); onProgress(value); return value;
+  const stop = (error, fatal = false) => {
+    stoppedError ??= error.message;
+    if (fatal) fatalError ??= error;
+    phase = "draining";
   };
+  const onInterrupt = () => stop(new Error("Extraction interrupted by SIGINT"));
+  const onTerminate = () => stop(new Error("Extraction interrupted by SIGTERM"));
+  let progressTail = Promise.resolve();
+  const progress = () => {
+    const operation = progressTail.then(async () => {
+      const tasks = await snapshot();
+      const counts = Object.fromEntries(["pending", "running", "succeeded", "failed"].map((status) => [status, tasks.filter((task) => task.status === status).length]));
+      const activeBatches = [...active.values()].map((batch) => ({ ...batch, elapsed_seconds: Math.floor((Date.now() - Date.parse(batch.started_at)) / 1000) }));
+      const oldest = activeBatches[0];
+      const value = { updated_at: new Date().toISOString(), phase, started_at: startedAt,
+        elapsed_seconds: Math.floor((Date.now() - Date.parse(startedAt)) / 1000),
+        model: contract.model_config.model, reasoning: contract.model_config.model_reasoning_effort, service_tier: contract.model_config.service_tier,
+        total: tasks.length, ...counts, batches, batch_size: batchSize, concurrency,
+        active_batches: activeBatches, running_batches: activeBatches.length,
+        retry_pending: tasks.filter(task => task.status === "failed" && retryEligible.has(task.task_id) && task.attempts < maxAttempts).length,
+        exhausted: tasks.filter(task => ["pending", "failed"].includes(task.status) && task.attempts >= maxAttempts).length,
+        batch_started_at: oldest?.started_at ?? null, batch_elapsed_seconds: oldest?.elapsed_seconds ?? null,
+        last_event: oldest?.last_event ?? null, last_event_at: oldest?.last_event_at ?? null,
+        error: stoppedError, partial: tasks.some((task) => task.status !== "succeeded"),
+        ...(publication ? { publication } : {}) };
+      const temporary = join(run, "codex_progress.json.tmp");
+      await writeJson(temporary, value);
+      await rename(temporary, join(run, "codex_progress.json"));
+      onProgress(value);
+      return value;
+    });
+    progressTail = operation.catch(() => {});
+    return operation;
+  };
+  const claim = () => withStore((store, archive) => {
+    if (stoppedError) return null;
+    const batch = [];
+    const corrections = [];
+    for (const id of manifest.task_ids) {
+      const task = store.get(id);
+      if (!(task.status === "pending" || (task.status === "failed" && retryEligible.has(id))) || task.attempts >= maxAttempts) continue;
+      if (!touched.has(id) && touched.size >= limit) continue;
+      touched.add(id);
+      batch.push(task);
+      if (task.status === "failed") {
+        const previous = archive.rows("SELECT error FROM extraction_attempts WHERE task_id=$id ORDER BY attempt DESC LIMIT 1", { $id: id })[0];
+        corrections.push({ id, error: previous?.error });
+        store.requeue({ id });
+      }
+      if (batch.length >= batchSize) break;
+    }
+    if (!batch.length) return null;
+    store.start(batch.map(task => task.task_id));
+    return { batch, corrections };
+  });
+  const worker = async () => {
+    for (;;) {
+      const claimed = await claim();
+      if (!claimed) return;
+      const { batch, corrections } = claimed;
+      const id = `${String(++batches).padStart(4, "0")}-${randomUUID()}`;
+      const directory = join(run, "codex", id);
+      const state = { id, task_count: batch.length, started_at: new Date().toISOString(), phase: "preparing", last_event: null, last_event_at: null };
+      active.set(id, state);
+      try {
+        await mkdir(directory, { recursive: true });
+        const schemaPath = await writeJson(join(directory, "response.schema.json"), batchResponseSchema(contract));
+        const outputPath = join(directory, "response.json");
+        const taskInput = batch.map(task => ({ id: task.task_id, context: task.source.post.context }));
+        await writeJson(join(directory, "tasks.json"), taskInput);
+        await writeJson(join(directory, "batch.json"), { ...state, tasks: batch.map(task => ({ id: task.task_id, attempt: task.attempts + 1 })) });
+        state.phase = "extracting";
+        await progress();
+        const modelStarted = Date.now();
+        let results;
+        let invocationError;
+        try {
+          results = await invoke({ config: contract.model_config, directory, schemaPath, outputPath,
+            prompt: extractionPrompt(contract, taskInput, corrections), onActivity: event => Object.assign(state, event) });
+        } catch (error) {
+          invocationError = error;
+          if (error.code !== "CODEX_TIMEOUT") stop(error);
+        }
+        state.model_elapsed_ms = Date.now() - modelStarted;
+        state.phase = "validating";
+        const validationStarted = Date.now();
+        if (!invocationError) await writeJsonl(join(directory, "results.jsonl"), results);
+        const knownIds = new Set(batch.map(task => task.task_id));
+        const unknown = (results ?? []).filter(result => !knownIds.has(result?.id));
+        const outcomes = await withStore(store => batch.map(task => {
+          const found = (results ?? []).filter(result => result?.id === task.task_id);
+          const rejection = invocationError?.message ?? (unknown.length ? "Unknown result IDs in Codex batch" : found.length !== 1 ? `${found.length ? "Duplicate" : "Missing"} analysis ID: ${task.task_id}` : null);
+          const outcome = store.accept(found[0] ?? { id: task.task_id, analysis: null }, rejection);
+          if (outcome.status === "failed" && (!invocationError || invocationError.code === "CODEX_TIMEOUT")) retryEligible.add(task.task_id);
+          return outcome;
+        }));
+        await writeJson(join(directory, "validation.json"), { outcomes, unknown_ids: unknown.map(item => item?.id) });
+        await writeJson(join(directory, "batch.json"), { ...state, phase: "finished", finished_at: new Date().toISOString(),
+          validation_elapsed_ms: Date.now() - validationStarted, error: invocationError?.message ?? null,
+          tasks: batch.map(task => ({ id: task.task_id, attempt: task.attempts + 1 })) });
+      } finally {
+        active.delete(id);
+      }
+      await progress();
+    }
+  };
+  let heartbeat;
+  let pulse;
   try {
     const initial = await snapshot();
     for (const task of initial) {
@@ -137,78 +249,39 @@ export async function extractWithCodex(options, { invoke = invokeCodex, onProgre
       if (!preserved && hashId("contract", [task.contract]) !== hashId("contract", [contract])) throw new Error(`Task ${task.task_id} contract differs from handoff`);
       if (options["retry-failed"] && task.status === "failed") retryEligible.add(task.task_id);
     }
-    if (initial.some((task) => task.status === "running")) throw new Error("Unfinished running tasks remain; explicitly etl recover before resuming");
-    await progress("started");
-    for (;;) {
-      const tasks = await snapshot();
-      const candidates = tasks.filter((task) => (task.status === "pending" || (task.status === "failed" && retryEligible.has(task.task_id))) && task.attempts < maxAttempts && (touched.has(task.task_id) || touched.size < limit));
-      const batch = [];
-      for (const task of candidates) {
-        if (batch.length >= batchSize) break;
-        if (!touched.has(task.task_id) && touched.size >= limit) continue;
-        touched.add(task.task_id); batch.push(task);
-      }
-      if (!batch.length) break;
-      const corrections = await withStore((store, archive) => {
-        const corrections = [];
-        for (const task of batch) {
-          if (task.status === "failed") {
-            const previous = archive.rows("SELECT result_json,error FROM extraction_attempts WHERE task_id=$id ORDER BY attempt DESC LIMIT 1", { $id: task.task_id })[0];
-            corrections.push({ id: task.task_id, error: previous?.error, previous_result: previous?.result_json ? JSON.parse(previous.result_json) : null });
-            store.requeue({ id: task.task_id });
-          }
-        }
-        store.start(batch.map((task) => task.task_id));
-        return corrections;
-      });
-      const directory = join(run, "codex", `${String(++batches).padStart(4, "0")}-${randomUUID()}`);
-      await mkdir(directory, { recursive: true });
-      const schemaPath = await writeJson(join(directory, "response.schema.json"), batchResponseSchema(contract));
-      const outputPath = join(directory, "response.json");
-      const taskInput = batch.map((task) => ({ id: task.task_id, context: task.source.post.context }));
-      await writeJson(join(directory, "tasks.json"), taskInput);
-      batchStarted = new Date().toISOString();
-      activity = { last_event: null, last_event_at: null };
-      await progress("extracting");
-      let pulse = null;
-      let pulseError = null;
-      const heartbeat = setInterval(() => {
-        if (!pulse) pulse = progress("extracting").catch(error => { pulseError = error; }).finally(() => { pulse = null; });
-      }, 15_000);
-      let results;
-      try { results = await invoke({ config: contract.model_config, directory, schemaPath, outputPath, prompt: extractionPrompt(contract, taskInput, corrections), onActivity: (event) => { activity = event; } }); }
-      catch (error) {
-        clearInterval(heartbeat);
-        if (pulse) await pulse;
-        await withStore((store) => { for (const task of batch) store.accept({ id: task.task_id, analysis: null }, error.message); });
-        if (error.code === "CODEX_TIMEOUT") {
-          for (const task of batch) retryEligible.add(task.task_id);
-          // A bounded task retry, not an authentication/configuration failure.
-          continue;
-        }
-        stoppedError = error.message;
-        break;
-      } finally {
-        clearInterval(heartbeat);
-        if (pulse) await pulse;
-      }
-      if (pulseError) throw pulseError;
-      await writeJsonl(join(directory, "results.jsonl"), results);
-      const knownIds = new Set(batch.map((task) => task.task_id));
-      const unknown = results.filter((result) => !knownIds.has(result?.id));
-      const outcomes = await withStore((store) => batch.map((task) => {
-        const found = results.filter((result) => result?.id === task.task_id);
-        const rejection = unknown.length ? "Unknown result IDs in Codex batch" : found.length !== 1 ? `${found.length ? "Duplicate" : "Missing"} analysis ID: ${task.task_id}` : null;
-        const outcome = store.accept(found[0] ?? { id: task.task_id, analysis: null }, rejection);
-        if (outcome.status === "failed") retryEligible.add(task.task_id);
-        return outcome;
-      }));
-      await writeJson(join(directory, "validation.json"), { outcomes, unknown_ids: unknown.map((item) => item?.id) });
-      await progress("validated");
+    if (initial.some(task => task.status === "running")) throw new Error("Unfinished running tasks remain; explicitly etl recover before resuming");
+    process.on("SIGINT", onInterrupt);
+    process.on("SIGTERM", onTerminate);
+    await progress();
+    phase = "extracting";
+    heartbeat = setInterval(() => {
+      if (!pulse) pulse = progress().catch(error => stop(error, true)).finally(() => { pulse = null; });
+    }, 15_000);
+    // Every worker handles its own errors so a rejection cannot release the run
+    // lock while other invocations are still running or persisting their results.
+    await Promise.allSettled(Array.from({ length: concurrency }, () => worker().catch(error => stop(error, true))));
+    clearInterval(heartbeat);
+    if (pulse) await pulse;
+    if (fatalError) {
+      phase = "stopped";
+      await progress();
+      throw fatalError;
     }
-    const final = await progress(stoppedError ? "stopped" : "finished");
-    if (options.out) final.publication = await runEtl("publish", { db, run, out: options.out });
-    await writeJson(join(run, "codex_progress.json"), final);
-    return final;
-  } finally { await lock.close(); await unlink(lockPath); }
+    if (options.out) {
+      phase = "publishing";
+      await progress();
+      try { publication = await runEtl("publish", { db, run, out: options.out }); }
+      catch (error) { stop(error, true); phase = "stopped"; await progress(); throw error; }
+    }
+    phase = stoppedError ? "stopped" : "finished";
+    return await progress();
+  } finally {
+    clearInterval(heartbeat);
+    if (pulse) await pulse;
+    await progressTail;
+    process.off("SIGINT", onInterrupt);
+    process.off("SIGTERM", onTerminate);
+    await lock.close();
+    await unlink(lockPath);
+  }
 }

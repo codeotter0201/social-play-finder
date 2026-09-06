@@ -66,6 +66,7 @@ npm run build
 | `npm run test` | 擴充功能單元測試 |
 | `npm run test:archive` | SQLite 歷史庫測試 |
 | `npm run test:badminton` | 抽取、分流、發布、查詢與網站測試 |
+| `npm run test:site` | 地區匯入、發布範圍與網站更新 |
 | `npm run check` | TypeScript、上述測試與擴充功能建置 |
 
 | 位置 | 責任 |
@@ -83,7 +84,7 @@ npm run build
 
 正式流程使用 Node.js／npm，不需要 Python 或 uv。首次取得原始碼時執行 `npm ci`，再以 `npm run check` 檢查。
 
-`site/index.html` 是納入版本控制的網站快照，包含頁面程式、場次資料與 CSV 下載。`result/`、`output/`、本機環境與 `dist/` 不提交。網站快照包含原文、作者及聯絡資訊；公開網站與公開 repository 都會公開其中的資料。
+`site/index.html` 是地區入口；`site/taipei/index.html`（雙北）與 `site/taichung/index.html`（台中）各自保存頁面程式、該區場次與 CSV。未發布地區顯示說明頁。`datasets.json` 保存來源批次歸屬，不代填場館縣市。`result/`、`output/`、本機環境與 `dist/` 不提交。網站快照包含原文、作者及聯絡資訊；公開網站與公開 repository 都會公開其中的資料。
 
 建立空的 GitHub repository 後，將下列 remote 換成自己的網址：
 

@@ -17,9 +17,9 @@ const fixture = join(directory, "fixtures", "raw.json");
 
 import { resultFor } from "./fixtures/analysis.mjs";
 
-async function createRun() {
+async function createRun(input = fixture) {
   const run = await mkdtemp(join(tmpdir(), "badminton-session-finder-"));
-  await prepareSources([fixture], run);
+  await prepareSources([input], run);
   const tasks = await readRecords(join(run, "llm_tasks.jsonl"));
   const results = [resultFor(tasks[1], "line"), resultFor(tasks[0], "secret")];
   await writeJsonl(join(run, "llm_results.jsonl"), results);
@@ -27,6 +27,24 @@ async function createRun() {
   await finalizeJoined(join(run, "joined_records.json"), run);
   return { run, tasks, results };
 }
+
+test("personal profile survives finalization separately from the original author URL", async () => {
+  const raw = await readJson(fixture);
+  raw.posts[0].author_profile_url = "https://www.facebook.com/profile.php?id=100001";
+  raw.posts[1].author_profile_url = "https://www.facebook.com/player.name";
+  const directory = await mkdtemp(join(tmpdir(), "badminton-profile-"));
+  const input = join(directory, "raw.json");
+  await writeJson(input, raw);
+  const { run } = await createRun(input);
+  const output = await readJson(join(run, "output_result.json"));
+  assert.deepEqual(output.source_posts.map(({ raw: post }) => post), raw.posts);
+  for (const post of raw.posts) {
+    const listing = output.listings.find(({ source }) => source.post_url === post.post_url);
+    assert.equal(listing.source.author_profile_url, post.author_profile_url);
+    assert.equal(listing.source.author_url, post.author_url);
+  }
+  await validateRun(run);
+});
 
 test("raw -> id/context -> shuffled id join -> actionable JSON and CSV", async () => {
   const { run, tasks } = await createRun();

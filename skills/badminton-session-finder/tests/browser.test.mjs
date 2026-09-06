@@ -399,3 +399,36 @@ test("clear button restores unfiltered results and removes chips after native re
   assert.equal(d.querySelectorAll('tr.is-selected').length, 1);
   dom.window.close();
 });
+
+test("author menu adds only a direct profile option and keeps source links and filtering", async () => {
+  const f = await fixture();
+  const dom = new JSDOM(f.html, {runScripts:'dangerously',url:'https://local.example/'});
+  const d = dom.window.document;
+  const row = d.querySelector('tr[data-listing-id]');
+  const sources = [...row.querySelectorAll('.primary-links a')].map(a=>[a.textContent,a.href]);
+  const authorUrl = f.result.listings.find(x=>x.listing_id===row.dataset.listingId).source.author_url;
+  row.querySelector('.author-trigger').click();
+  const popup = row.querySelector('.author-popover');
+  assert.equal(popup.hidden,false);
+  const link = popup.querySelector('a');
+  const id = new URL(authorUrl).searchParams.get('id') || authorUrl.match(/\/user\/(\d+)/)?.[1];
+  assert.equal(link.href,`https://www.facebook.com/profile.php?id=${id}`);
+  assert.equal(link.textContent,'前往 Facebook 個人檔案');
+  assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');
+  assert.equal(row.getAttribute('aria-selected'),'false');
+  assert.deepEqual([...row.querySelectorAll('.primary-links a')].map(a=>[a.textContent,a.href]),sources);
+  assert.equal(popup.querySelectorAll('a').length,1);
+  popup.querySelector('[data-exclude-author]').click();
+  assert.equal(d.querySelectorAll(`tr[data-listing-id="${row.dataset.listingId}"]`).length,0);
+  dom.window.close();
+});
+
+test("anonymous authors never get a personal profile link", async () => {
+  const f=await fixture();
+  f.result.source_posts.forEach(post=>{post.raw.is_anonymous=true;});
+  const path=join(f.directory,'anonymous-profile.html');
+  await buildBrowser(f.result,f.csv,path);
+  const dom=new JSDOM(await readFile(path,'utf8'),{runScripts:'dangerously'});
+  assert.equal(dom.window.document.querySelectorAll('.author-popover a').length,0);
+  dom.window.close();
+});

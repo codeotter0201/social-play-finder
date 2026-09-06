@@ -19,6 +19,7 @@ describe("Facebook group DOM parser", () => {
     expect(first).toMatchObject({
       post_id: "10001", post_url: "https://www.facebook.com/groups/example/posts/10001/",
       author_name: "王小明", author_url: "https://www.facebook.com/profile.php?id=20001",
+      author_profile_url: "https://www.facebook.com/profile.php?id=20001",
       is_anonymous: false, published_at: "2026-08-30T02:20:00.000Z", reaction_count: 12000,
       comment_count: 12, share_count: 3, is_pinned: true,
     });
@@ -28,7 +29,7 @@ describe("Facebook group DOM parser", () => {
       { type: "link", url: "https://example.test/story?a=1" },
     ]);
     const anonymous = parseCard(checked.cards[1], checked.groupUrl)!;
-    expect(anonymous).toMatchObject({ author_name: "匿名成員", author_url: null, is_anonymous: true, published_at: null });
+    expect(anonymous).toMatchObject({ author_name: "匿名成員", author_url: null, author_profile_url: null, is_anonymous: true, published_at: null });
     expect(anonymous.warnings).toContain("missing_post_identity");
     expect(anonymous.warnings).toContain("published_time_not_normalized");
     expect(classifyCard(checked.cards[2])).toBe("excluded");

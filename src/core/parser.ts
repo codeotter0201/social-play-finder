@@ -1,5 +1,6 @@
 import { cleanText, normalizeAbsoluteTime, normalizeCount } from "../shared/normalize";
 import { DOM_RULES, TEXT_SIGNALS } from "../shared/rules";
+import { facebookProfileUrl } from "../shared/facebook-profile.mjs";
 import type { MediaItem, Post } from "../shared/types";
 import { extractPostId, normalizeUrl, parseGroupSource } from "../shared/url";
 
@@ -170,6 +171,7 @@ export function parseCard(card: Element, baseUrl: string, scrapedAt = new Date()
     post_url: postUrl,
     author_name: authorName,
     author_url: authorUrl,
+    author_profile_url: facebookProfileUrl(authorUrl, anonymous),
     is_anonymous: anonymous ? true : authorName ? false : null,
     content_text: contentText,
     content_is_truncated: contentIsTruncated,
