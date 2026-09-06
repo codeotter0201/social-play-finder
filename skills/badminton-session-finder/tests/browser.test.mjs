@@ -334,7 +334,7 @@ test('sortable headers cycle ascending, descending, none independently in both m
  }
  const row=d.querySelector('#rows tr[data-listing-id]');
  const labels=[...row.children].map(c=>c.dataset.label);
- assert.ok(labels.indexOf('玩法')<labels.indexOf('程度'));
+ assert.ok(labels.indexOf('玩法')<labels.indexOf('程度／用球／單場人數'));
  assert.equal(row.querySelector('.price .hourly-price'),null);
  assert.ok(row.querySelector('.hourly-rate'));
  assert.ok(row.querySelector('.contact-line .primary-links'));
@@ -349,7 +349,9 @@ test('restored headers, matching source links and borderless details preserve fl
  const row=d.querySelector('#rows tr[data-listing-id]');row.click();
  const links=[...row.querySelector('.primary-links').children];
  const preview=[...d.querySelector('.selection-links').children];
- assert.equal(preview.length,2);
+ assert.equal(preview.length,3);
+ assert.equal(preview[2].textContent,'作者個人檔案 ↗');
+ assert.match(preview[2].getAttribute('href'),/^https:\/\/www\.facebook\.com\/profile\.php\?id=\d+$/);
  for(let i=0;i<2;i++){
   assert.equal(preview[i].textContent,links[i].textContent);
   assert.equal(preview[i].getAttribute('href'),links[i].getAttribute('href'));
@@ -371,9 +373,9 @@ test("skill cell stacks level and shuttlecock text, including missing values", a
   const dom = new JSDOM(await readFile(path, 'utf8'), { runScripts: 'dangerously', url: 'https://local.example/' });
   for (const [index, listing] of f.result.listings.entries()) {
     const row = [...dom.window.document.querySelectorAll('tr[data-listing-id]')].find(row => row.dataset.listingId === listing.listing_id);
-    const cell = row.querySelector('td[data-label="程度"]');
+    const cell = row.querySelector('td[data-label="程度／用球／單場人數"]');
     assert.equal(cell.children.length, 1); // One content container beside the mobile label.
-    assert.deepEqual([...cell.firstElementChild.children].map(node => node.textContent), [listing.skill.description || '程度未標示', '用球：' + (index === 0 ? value : '未標示')]);
+    assert.deepEqual([...cell.firstElementChild.children].map(node => node.textContent), [listing.skill.description || '程度未標示', '用球：' + (index === 0 ? value : '未標示'), `場地：${listing.court_count == null ? '未標示' : listing.court_count + ' 面'}；總人數：${listing.availability.capacity == null ? '未標示' : listing.availability.capacity + ' 人'}`]);
     assert.equal(cell.querySelector('img'), null);
   }
   dom.window.close();

@@ -39,6 +39,8 @@ export interface MediaItem { type: "image" | "video" | "link" | "unknown"; url: 
 export interface Post {
   post_id: string | null;
   post_url: string | null;
+  /** Exact card HTML at parsing time, compressed for diagnostics when the URL is missing. */
+  missing_post_url_html?: { encoding: "gzip-base64"; data: string };
   author_name: string | null;
   author_url: string | null;
   /** Direct profile link derived from author_url; optional for older exports. */
