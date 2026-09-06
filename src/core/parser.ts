@@ -126,7 +126,7 @@ export function parseCard(card: Element, baseUrl: string, scrapedAt = new Date()
   const permalink = findPostPermalink(card);
   let postUrl = normalizeUrl(permalink?.getAttribute("href"), baseUrl);
   const explicitId = card.getAttribute("data-fbgpe-post-id");
-  const postId = explicitId || extractPostId(postUrl) || extractPcbPostId(card);
+  let postId = explicitId || extractPostId(postUrl) || extractPcbPostId(card);
   if (!postUrl && postId) {
     const group = parseGroupSource(baseUrl);
     if (group) postUrl = normalizeUrl(`${group.groupUrl}posts/${postId}/`);
@@ -152,6 +152,11 @@ export function parseCard(card: Element, baseUrl: string, scrapedAt = new Date()
     : normalizeAbsoluteTime(machineTime);
 
   if (!postId && !postUrl && (!contentText || (!authorName && !publishedTimeRaw))) return null;
+
+  if (!postId && !postUrl) {
+    postUrl = findCommentParentPostUrl(card, baseUrl);
+    postId = extractPostId(postUrl);
+  }
 
   const truncatedAttr = card.getAttribute("data-fbgpe-truncated");
   const contentIsTruncated = truncatedAttr === "true" ? true : truncatedAttr === "false" ? false : findSeeMore(card) ? true : null;
@@ -207,6 +212,25 @@ function isCommentPermalink(raw: string): boolean {
   } catch {
     return true;
   }
+}
+
+function findCommentParentPostUrl(card: Element, baseUrl: string): string | null {
+  const group = parseGroupSource(baseUrl);
+  if (!group || card.closest("[data-commentid], [data-fbgpe-comments]")) return null;
+  const candidates = new Set<string>();
+  for (const anchor of card.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+    const comments = anchor.closest("[data-commentid], [data-fbgpe-comments]");
+    if (!comments || !card.contains(comments)) continue;
+    if (DOM_RULES.content.some((selector) => anchor.closest(selector))) continue;
+    const raw = anchor.getAttribute("href")!;
+    if (!isCommentPermalink(raw)) continue;
+    const normalized = normalizeUrl(raw, baseUrl);
+    if (!normalized || parseGroupSource(normalized)?.groupUrl !== group.groupUrl) continue;
+    const match = new URL(normalized).pathname.match(/^\/groups\/[^/]+\/(?:posts|permalink)\/(\d+)\/?$/);
+    if (match) candidates.add(`${group.groupUrl}posts/${match[1]}/`);
+  }
+  // Multiple comments must agree on the parent; never choose an arbitrary post.
+  return candidates.size === 1 ? [...candidates][0] : null;
 }
 
 function extractPcbPostId(card: Element): string | null {

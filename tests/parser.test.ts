@@ -91,6 +91,50 @@ describe("Facebook group DOM parser", () => {
     expect(parseCard(card, "https://www.facebook.com/groups/example/")).toBeNull();
   });
 
+  it("recovers the parent post from rendered comment links without using comment time", () => {
+    document.body.innerHTML = `
+      <div data-virtualized="false">
+        <div data-ad-rendering-role="profile_name"><a role="link">Test author</a></div>
+        <div data-ad-rendering-role="story_message">Visible post text</div>
+        <div data-commentid="456"><div role="article" aria-label="Reader 的留言">
+          <a href="/groups/example/posts/123/?comment_id=456&amp;__tn__=R-R" aria-label="2026年9月6日">7分鐘</a>
+        </div></div>
+        <div data-commentid="789">
+          <a href="/groups/example/posts/123/?comment_id=456&amp;reply_comment_id=789">1 小時</a>
+        </div>
+      </div>`;
+    const post = parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/");
+    expect(post).toMatchObject({
+      post_id: "123", post_url: "https://www.facebook.com/groups/example/posts/123/",
+      content_text: "Visible post text", published_time_raw: null, published_at: null,
+    });
+    expect(post!.warnings).not.toContain("missing_post_identity");
+  });
+
+  it.each([
+    ['outside the comment region', '<a href="/groups/example/posts/123/?comment_id=456">reference</a>'],
+    ['another group', '<div data-commentid="456"><a href="/groups/other/posts/123/?comment_id=456">comment</a></div>'],
+    ['another host', '<div data-commentid="456"><a href="https://example.org/groups/example/posts/123/?comment_id=456">comment</a></div>'],
+    ['conflicting post IDs', '<div data-commentid="456"><a href="/groups/example/posts/123/?comment_id=456">comment</a><a href="/groups/example/posts/999/?comment_id=789">comment</a></div>'],
+    ['a reference inside the post body', '<div data-ad-rendering-role="story_message"><div data-commentid="456"><a href="/groups/example/posts/123/?comment_id=456">reference</a></div></div>'],
+  ])("does not recover identity from %s", (_name, links) => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>${links}<div data-fbgpe-content>Post text</div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/")).toMatchObject({
+      post_id: null, post_url: null, warnings: ["missing_post_identity"],
+    });
+  });
+
+  it.each([
+    '<a href="/groups/example/posts/321/">2 小時</a>',
+    '<a href="/photo/?fbid=10&amp;set=pcb.321">photo</a>',
+  ])("keeps existing identity ahead of comment fallback: %s", (identity) => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>${identity}
+      <div data-commentid="456"><a href="/groups/example/posts/123/?comment_id=456">7 分鐘</a></div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/example/posts/321/",
+    });
+  });
+
   it("expands and parses the current story-message DOM", async () => {
     document.body.innerHTML = `
       <div role="feed">
