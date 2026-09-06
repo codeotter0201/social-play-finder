@@ -13,7 +13,13 @@
     {
       "id": "taichung",
       "name": "台中",
-      "batch_ids": []
+      "batch_ids": [
+        "41f7f4c2-d77a-4444-b0af-3f9297ca56bb",
+        "ade1d8d3-f166-45d5-b4b2-43f0553ae4a7",
+        "2ec1eb5a-2b1a-45d9-ba6f-79d4f17c2769",
+        "3c26b751-b299-4e57-a790-88d58aac2029",
+        "5559c5b0-3d5b-4e36-ab3b-9bca5401ac5b"
+      ]
     }
   ]
 }

@@ -108,7 +108,7 @@ npm run badminton -- validate --run result/sessions
 
 ## 地區資料集與匯入
 
-[資料集設定](../../datasets.json) 保存地區 ID、名稱與來源批次 ID。既有四份資料歸於 `taipei`（雙北）；`taichung`（台中）尚未匯入。這是來源歸屬，不修改抽取的 `venue.city`，也不需要重跑既有 AI 分析。
+[資料集設定](../../datasets.json) 保存地區 ID、名稱與來源批次 ID。雙北來源歸於 `taipei`，台中來源歸於 `taichung`；各區目前的批次清單以設定檔為準。這是來源歸屬，不修改抽取的 `venue.city`，也不需要重跑既有 AI 分析。
 
 以同一個 SQLite 保存各區資料。匯入時指定地區，成功後會將批次累加到設定中；同批次重送可重入，同一批次不可改歸另一區。未指定 `--dataset` 的既有 archive import 保持原行為，但不會自動歸區。請使用相同資料庫依序執行匯入；若資料庫已匯入但設定寫入失敗，修正檔案寫入問題後重送相同命令即可。
 
