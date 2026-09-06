@@ -13,7 +13,7 @@ function usage() {
   return `Usage:
   npm run badminton -- prepare <raw.json> [more.json ...] --out <result-directory> [--model-config <model.json>]
   npm run badminton -- prepare --db <archive.sqlite> --model-config <model.json> --out <handoff-directory> [--dataset <id> | --batch-ids <id,id,...>] [--post-key <key>] [--preserve-succeeded] [--rerun]
-  npm run badminton -- etl extract --db <archive.sqlite> --run <handoff-directory> [--out <publication-directory>] [--batch-size 8] [--max-attempts 3] [--retry-failed] [--limit <posts>]
+  npm run badminton -- etl extract --db <archive.sqlite> --run <handoff-directory> [--out <publication-directory>] [--batch-size 8] [--concurrency 1] [--max-attempts 3] [--retry-failed] [--limit <posts>]
   npm run badminton -- etl start --db <archive.sqlite> --run <handoff-directory>
   npm run badminton -- etl accept --db <archive.sqlite> --run <handoff-directory> --analysis <results.jsonl>
   npm run badminton -- etl publish --db <archive.sqlite> --out <publication-directory> [--dataset <id> | --run <handoff-directory>] [--refresh]

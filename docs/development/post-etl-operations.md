@@ -44,7 +44,7 @@ npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/
 
 若只整理指定 raw 批次，prepare 加 `--batch-ids <batch_id,batch_id,...>`；它選這些批次出現的貼文 key，再從歷史庫選各 key 的最新觀察。extract 發布範圍取自本次 handoff；獨立 publish 可加 `--run result/my-handoff` 使用相同範圍。
 
-extract 依序分批呼叫以下 Codex 指令，必要語意規則與 `{id,context}` 由 stdin 傳入；schema 透過 `--output-schema` 傳入，版本及模型設定保留於本機，不在提示重複傳送，沒有多 agent 並行：
+extract 分批呼叫以下 Codex 指令，預設一次執行一批；`--concurrency 1..8` 可指定同時執行的模型批次數。必要語意規則與 `{id,context}` 由 stdin 傳入；schema 透過 `--output-schema` 傳入，版本及模型設定保留於本機，不在提示重複傳送：
 
 ```sh
 codex -a never exec --ignore-user-config --ephemeral -s read-only --skip-git-repo-check \
@@ -61,7 +61,19 @@ codex -a never exec --ignore-user-config --ephemeral -s read-only --skip-git-rep
 npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/my-handoff --out result/sessions --retry-failed --max-attempts 3
 ```
 
-若程序被強制中止，先確認 `codex-extract.lock` 記錄的 PID 已結束，移除該殘留鎖，再依下方 recover 流程重排處理中任務。`--limit <篇數>` 可用於先跑小批驗證；不會把尚未抽取的貼文當作已完成。
+### 多批非同步抽取
+
+```bash
+npm run badminton -- etl extract --db result/facebook-posts.sqlite --run result/my-handoff --out result/sessions --batch-size 50 --concurrency 2 --max-attempts 3
+```
+
+`--batch-size` 是單次模型呼叫的篇數；`--concurrency` 是同時處理的批次上限，預設 1、最多 8，不修改 handoff 的模型契約。完成的批次立即核對 ID、驗證並保存，空出的名額接續處理下一批，不必等待其他批次。協調者統一領取任務與串行存取 sql.js 歷史庫；不要以多個 extract 程序共用資料庫來增加併發。
+
+重試共用併發上限、每篇嘗試上限及整輪 `--limit`（不重複計入重試篇）。成功篇不重跑，缺少／重複／未知 ID 與語意錯誤沿用原驗證。不可重試的呼叫錯誤會停止派發，等待已領取的批次回傳或逾時並保存結果。SIGINT／SIGTERM 同樣停止派發並收尾；等待期間可能仍需一個模型逾時週期。所有批次收尾後才執行 `--out` 發布；部分失敗保留 partial 與錯誤，只有發布完成後才寫入最終 finished／stopped。資料庫或檔案保存失敗則停止並回報錯誤，不自動發布。
+
+`codex_progress.json` 由單一寫入者以原子替換更新，包含 concurrency、running_batches、active_batches（各批 ID、篇數、階段、起始時間、耗時與最近事件）、retry_pending（可重試失敗篇）、exhausted（已達嘗試上限的未完成篇），以及整輪 started_at／elapsed_seconds。原 batch_started_at／batch_elapsed_seconds／last_event 欄位表示最早仍在途的批次，無在途批次時為 null。每批目錄的 batch.json 保存任務 ID 與 attempt、模型耗時、驗證保存耗時與完成時間，供後續 benchmark 使用；尚未量測加速比例。
+
+若程序被強制中止，先確認 `codex-extract.lock` 記錄的 PID 與該輪啟動的模型子程序都已結束，移除該殘留鎖，再依下方 recover 流程重排處理中任務。`--limit <篇數>` 可用於先跑小批驗證；不會把尚未抽取的貼文當作已完成。
 
 ## 人工 JSONL 交接
 
