@@ -26,7 +26,7 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
   if (message.type === "PREPARE_START") {
     const state = await getState();
     if (state.active) return { ok: false, code: "batch_active", data: state.active };
-    if (state.result && !state.resultHandled && !message.replaceResult) return { ok: false, code: "result_requires_action" };
+    if (state.result && !message.replaceResult) return { ok: false, code: "result_requires_action" };
     const settings = parseBatchSettings(message.settings);
     if (!settings) return { ok: false, code: "invalid_batch_settings" };
     const source = parseGroupSource(message.tabUrl);

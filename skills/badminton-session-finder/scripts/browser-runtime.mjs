@@ -233,7 +233,11 @@ export function mountBrowser(document = globalThis.document) {
         cell("時間", listingTime(listing), "time");
         cell("場館／地區", [listing.venue.name || "場館未標示", listing.venue.city, listing.venue.district, listing.venue.address].filter(Boolean).join(" · "));
         cell("玩法", PLAY_FORMATS[listing.play_format] || "", "play-format");
-        cell("程度", listing.skill.description || "程度未標示");
+        const skill = cell("程度");
+        const skillValue = node("div", undefined, "cell-value");
+        skillValue.append(node("div", listing.skill.description || "程度未標示"));
+        skillValue.append(node("div", `用球：${listing.shuttlecock?.trim() || "未標示"}`, "shuttlecock"));
+        skill.append(skillValue);
         cell("時數", durationLabel(listing.schedule), "duration");
         const price = cell("費用（元）", undefined, "price");
         price.append(node("span", row.fee_min_twd, "fee-amount"));

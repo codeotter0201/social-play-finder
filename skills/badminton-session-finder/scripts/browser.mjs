@@ -92,6 +92,7 @@ thead th.duration-heading,thead th.fee-heading,thead th.hourly_rate-heading { te
 tr[data-listing-id]:hover { background:#fcfdfb; }
 .time { white-space:normal; overflow-wrap:anywhere; font-weight:600; font-variant-numeric:tabular-nums; }
 .row-date,.time,.duration,.price,.hourly-rate { white-space:nowrap; }
+.shuttlecock { margin-top:4px; color:var(--muted); font-size:12px; white-space:normal; overflow-wrap:anywhere; }
 .duration { text-align:right; font-variant-numeric:tabular-nums; }
 .hourly-rate { text-align:right; font-variant-numeric:tabular-nums; }
 .contact-line { display:flex; align-items:center; gap:10px; }

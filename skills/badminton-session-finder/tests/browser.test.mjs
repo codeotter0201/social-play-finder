@@ -359,3 +359,22 @@ test('restored headers, matching source links and borderless details preserve fl
  row.querySelector('.details-toggle').click();assert.equal(row.querySelector('.contact-details').hidden,false);
  dom.window.close();
 });
+
+
+test("skill cell stacks level and shuttlecock text, including missing values", async () => {
+  const f = await fixture();
+  const value = '勝利B-04、碳音MAX <img src=x onerror=alert(1)>';
+  f.result.listings[0].shuttlecock = value;
+  f.result.listings[1].shuttlecock = null;
+  const path = join(f.directory, 'shuttlecock.html');
+  await buildBrowser(f.result, f.csv, path);
+  const dom = new JSDOM(await readFile(path, 'utf8'), { runScripts: 'dangerously', url: 'https://local.example/' });
+  for (const [index, listing] of f.result.listings.entries()) {
+    const row = [...dom.window.document.querySelectorAll('tr[data-listing-id]')].find(row => row.dataset.listingId === listing.listing_id);
+    const cell = row.querySelector('td[data-label="程度"]');
+    assert.equal(cell.children.length, 1); // One content container beside the mobile label.
+    assert.deepEqual([...cell.firstElementChild.children].map(node => node.textContent), [listing.skill.description || '程度未標示', '用球：' + (index === 0 ? value : '未標示')]);
+    assert.equal(cell.querySelector('img'), null);
+  }
+  dom.window.close();
+});

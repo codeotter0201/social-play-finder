@@ -39,6 +39,7 @@ describe("popup result controls", () => {
           messages.push(message);
           if (message.type === "DISCARD_RESULT") state = { ...state, result: null, resultHandled: true };
           if (message.type === "PREPARE_START") {
+            if (state.result && !message.replaceResult) return { ok: false, code: "result_requires_action" };
             const active: ActiveBatch = {
               batchId: message.batchId, tabId: message.tabId, groupName: null, groupUrl: "https://www.facebook.com/groups/123/",
               phase: "preflight", settings: message.settings, startedAt: "2026-08-30T00:02:00.000Z",
@@ -82,6 +83,41 @@ describe("popup result controls", () => {
     expect(messages.some((message) => message.type === "DISCARD_RESULT")).toBe(true);
     expect(document.querySelector("#result")!.classList).toContain("hidden");
     expect(document.querySelector("#controls")!.classList).not.toContain("hidden");
+  });
+
+  it.each([false, true])("confirms replacement from start, including exported results (%s)", async (handled) => {
+    state.resultHandled = handled;
+    await import("../src/popup/index");
+    await flushMicrotasks();
+    document.querySelector<HTMLButtonElement>("#start")!.click();
+    await flushMicrotasks();
+    const dialog = document.querySelector<HTMLDialogElement>("#restart-confirmation")!;
+    expect(dialog?.hasAttribute("open")).toBe(true);
+    expect(state.result).not.toBeNull();
+    expect(tabMessages).toHaveLength(0);
+    dialog.returnValue = "restart";
+    dialog.dispatchEvent(new Event("close"));
+    await flushMicrotasks();
+    expect(messages.filter(message => message.type === "PREPARE_START")).toHaveLength(2);
+    expect(messages).toContainEqual(expect.objectContaining({ type: "PREPARE_START", replaceResult: true }));
+    expect(tabMessages).toContainEqual(expect.objectContaining({ type: "START_BATCH" }));
+  });
+
+  it.each(["cancel", ""])("keeps previous results when restart is dismissed (%s)", async (answer) => {
+    const previous = state.result;
+    await import("../src/popup/index");
+    await flushMicrotasks();
+    document.querySelector<HTMLButtonElement>("#start")!.click();
+    await flushMicrotasks();
+    const dialog = document.querySelector<HTMLDialogElement>("#restart-confirmation")!;
+    expect(dialog?.hasAttribute("open")).toBe(true);
+    dialog.returnValue = answer;
+    dialog.dispatchEvent(new Event("close"));
+    await flushMicrotasks();
+    expect(state.result).toBe(previous);
+    expect(tabMessages).toHaveLength(0);
+    expect(messages.some(message => message.type === "DISCARD_RESULT")).toBe(false);
+    expect(document.querySelector<HTMLButtonElement>("#start")!.disabled).toBe(false);
   });
 
   it("shows actionable card failure counts", async () => {

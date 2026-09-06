@@ -12,6 +12,8 @@ const start = $<HTMLButtonElement>("start");
 const stop = $<HTMLButtonElement>("stop");
 const dialog = $<HTMLDialogElement>("responsibility");
 const discardDialog = $<HTMLDialogElement>("discard-confirmation");
+const restartDialog = $<HTMLDialogElement>("restart-confirmation");
+let starting = false;
 const SETTINGS_KEY = "batchSettings";
 let currentState: SessionState | null = null;
 
@@ -53,6 +55,14 @@ const poller = window.setInterval(() => void refresh(), 750);
 window.addEventListener("unload", () => clearInterval(poller));
 
 async function begin(): Promise<void> {
+  if (starting) return;
+  starting = true;
+  start.disabled = true;
+  try { await prepareStart(); }
+  finally { starting = false; start.disabled = false; }
+}
+
+async function prepareStart(): Promise<void> {
   hideNotice();
   const settings = readSettings();
   if (!settings) return showNotice("批次設定無效。請確認數值範圍，且最小值不大於最大值。");
@@ -69,7 +79,10 @@ async function begin(): Promise<void> {
   const batchId = crypto.randomUUID();
   let response = await send({ type: "PREPARE_START", batchId, tabId: tab.id, tabUrl: tab.url, settings, replaceResult: false });
   if (!response.ok && response.code === "result_requires_action") {
-    if (!confirm("已有尚未處理的批次結果。確定要捨棄並開始新批次嗎？")) return;
+    restartDialog.returnValue = "";
+    restartDialog.showModal();
+    const replace = await new Promise<boolean>((resolve) => restartDialog.addEventListener("close", () => resolve(restartDialog.returnValue === "restart"), { once: true }));
+    if (!replace) return;
     response = await send({ type: "PREPARE_START", batchId, tabId: tab.id, tabUrl: tab.url, settings, replaceResult: true });
   }
   if (!response.ok) return showNotice(response.code === "batch_active" ? "已有作用中批次，請先停止該批次。" : errorLabels[response.code as PreflightCode] || response.error || "無法開始批次。");
