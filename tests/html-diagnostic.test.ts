@@ -5,7 +5,7 @@ import { parseCard } from "../src/core/parser";
 
 describe("missing post URL diagnostics", () => {
   it("preserves the HTML at capture time losslessly through JSON, even if the live card changes", async () => {
-    document.body.innerHTML = '<article><h3><a role="link" href="/groups/1/user/2/">作者</a></h3><div data-ad-preview="message">測試🏸</div><a href="/photo/?set=gm.123">圖片</a></article>';
+    document.body.innerHTML = '<article><h3><a role="link" href="/groups/1/user/2/">作者</a></h3><div data-ad-preview="message">測試🏸</div><a href="/photo/?fbid=9">圖片</a></article>';
     const card = document.querySelector("article")!;
     const post = parseCard(card, "https://www.facebook.com/groups/1/")!;
     expect(post.post_url).toBeNull();

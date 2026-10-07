@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { classifyCard, findCards, findSeeMore, parseCard } from "../src/core/parser";
 import { preflight } from "../src/core/preflight";
-import { expandContent } from "../src/content/runner";
+import { expandContent, revealPermalink } from "../src/content/runner";
 
 const fixture = (name: string) => readFileSync(resolve("tests/fixtures", name), "utf8");
 
@@ -133,6 +133,72 @@ describe("Facebook group DOM parser", () => {
     expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/")).toMatchObject({
       post_id: "321", post_url: "https://www.facebook.com/groups/example/posts/321/",
     });
+  });
+
+  it.each([
+    ['a group-album photo', '<a href="https://www.facebook.com/photo/?fbid=10&amp;set=gm.321&amp;idorvanity=123&amp;__cft__[0]=x">photo</a>'],
+    ['a post video', '<a href="https://www.facebook.com/42/videos/pcb.321/555?__cft__[0]=x">video</a>'],
+  ])("recovers the post ID from %s", (_name, attachment) => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>${attachment}</article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/123/posts/321/", warnings: [],
+    });
+  });
+
+  it("ignores attachment post IDs inside comments", () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>
+      <div data-commentid="456"><a href="/photo/?fbid=10&amp;set=gm.999">photo</a></div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({ post_id: null, post_url: null });
+  });
+
+  it("matches comment links that use the group's vanity name on a numeric group page", () => {
+    const card = (href: string) => `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>
+      <div data-commentid="456"><a href="${href}">7 分鐘</a></div></article>`;
+    document.body.innerHTML = card("https://www.facebook.com/groups/example/posts/321/?comment_id=456");
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/123/posts/321/",
+    });
+    document.body.innerHTML = card("https://www.facebook.com/groups/999/posts/321/?comment_id=456");
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({ post_id: null, post_url: null });
+  });
+
+  it("reads the displayed time of an obfuscated timestamp link from aria-labelledby", () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>
+      <div id="time-label" aria-hidden="true">55分鐘前</div>
+      <a aria-labelledby="time-label" role="link" href="?__cft__[0]=x&amp;__tn__=%2CO%2CP-R#?ibh"></a>
+      <div data-fbgpe-content>Post text</div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({
+      published_time_raw: "55分鐘前", published_at: null,
+    });
+  });
+
+  it("hovers an obfuscated timestamp until Facebook writes the permalink", async () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>
+      <div id="time-label">1 天前</div>
+      <a aria-labelledby="time-label" role="link" href="?__cft__[0]=x#?ibh"></a>
+      <div data-fbgpe-content>Post text</div></article>`;
+    const card = document.body.firstElementChild!;
+    const link = card.querySelector("a[aria-labelledby]")!;
+    const events: string[] = [];
+    for (const type of ["mouseover", "mouseout"]) link.addEventListener(type, () => events.push(type));
+    link.addEventListener("mouseover", () => setTimeout(() => link.setAttribute("href", "https://www.facebook.com/groups/123/posts/321/?__cft__[0]=x"), 10));
+
+    await revealPermalink(card);
+
+    expect(events).toEqual(["mouseover", "mouseout"]);
+    expect(parseCard(card, "https://www.facebook.com/groups/123/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/123/posts/321/", published_time_raw: "1 天前",
+    });
+  });
+
+  it("does not hover when the card already has a permalink", async () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>
+      <a href="/groups/123/posts/321/">2 小時</a><a role="link" href="?__cft__[0]=x">3 小時</a>
+      <div data-fbgpe-content>Post text</div></article>`;
+    const hovered = vi.fn();
+    document.querySelector("a[href^='?__cft__']")!.addEventListener("mouseover", hovered);
+    await revealPermalink(document.body.firstElementChild!);
+    expect(hovered).not.toHaveBeenCalled();
   });
 
   it("expands and parses the current story-message DOM", async () => {
