@@ -1,0 +1,5 @@
+{
+  "model": "claude-opus-5-5",
+  "version": "claude-code-opus-1",
+  "mode": "manual-jsonl"
+}
