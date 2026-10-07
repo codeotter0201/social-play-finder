@@ -164,6 +164,8 @@ stopped 以及已有有效資料的 failed 批次可匯出部分結果，但預�
 - 保留有意義的換行，清除多餘空白。
 - 擴充功能可點擊已辨識主貼文內容區內的「查看更多」。
 - 不得點擊留言、附件、外部連結、作者或導覽元素。
+- 主貼文時間連結為遮蔽網址（`?__cft__…`）且卡片沒有其他貼文識別時，可對該連結觸發滑鼠移入與 focus（不點擊），最多等待 1 秒讓頁面寫入真實貼文網址，之後移出並 blur。
+- published_time_raw 取自時間連結的 aria-label、aria-labelledby 指向元素的文字或連結文字。
 - 展開失敗時保留目前可見文字，並設定 content_is_truncated 為 true。
 - 成功確認完整時為 false；無法判定時為 null。
 - 圖片或影片貼文即使 content_text 為空字串，只要具有可靠貼文識別，仍可輸出。
@@ -219,6 +221,8 @@ stopped 以及已有有效資料的 failed 批次可匯出部分結果，但預�
 1. post_id。
 2. 正規 post_url。
 3. 批次指紋。
+
+post_id 依序取自主貼文時間連結（`/posts/`、`permalink.php`、`story_fbid=`）、主貼文附件網址（`set=pcb.<id>`、`set=gm.<id>`、`/videos/pcb.<id>/`），最後才取自留言區中一致指向同一篇貼文的留言連結；附件與留言識別都以批次社團網址建立正規 post_url。留言連結的社團可為數字 ID 或社團代稱；兩者同為數字 ID 或同為代稱時必須相同。
 
 批次指紋只在 post_id 與 post_url 都缺少時使用，由正規化作者、原始顯示時間與內容組成；不得輸出成 Facebook post_id，也不保證跨批次穩定。
 

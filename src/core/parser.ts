@@ -2,7 +2,7 @@ import { cleanText, normalizeAbsoluteTime, normalizeCount } from "../shared/norm
 import { DOM_RULES, TEXT_SIGNALS } from "../shared/rules";
 import { facebookProfileUrl } from "../shared/facebook-profile.mjs";
 import type { MediaItem, Post } from "../shared/types";
-import { extractPostId, normalizeUrl, parseGroupSource } from "../shared/url";
+import { extractPostId, normalizeUrl, parseGroupSource, type GroupSource } from "../shared/url";
 
 export type CardKind = "supported" | "excluded" | "ignored" | "unknown";
 
@@ -49,7 +49,7 @@ function hasPostEvidence(card: Element): boolean {
   return Boolean(
     first(card, DOM_RULES.author)
     || first(card, DOM_RULES.time)
-    || card.querySelector('a[href*="set=pcb."], img[src], video[src], video[poster]'),
+    || card.querySelector('a[href*="set=pcb."], a[href*="set=gm."], a[href*="/videos/pcb."], img[src], video[src], video[poster]'),
   );
 }
 
@@ -126,7 +126,7 @@ export function parseCard(card: Element, baseUrl: string, scrapedAt = new Date()
   const permalink = findPostPermalink(card);
   let postUrl = normalizeUrl(permalink?.getAttribute("href"), baseUrl);
   const explicitId = card.getAttribute("data-fbgpe-post-id");
-  const postId = explicitId || extractPostId(postUrl) || extractPcbPostId(card);
+  let postId = explicitId || extractPostId(postUrl) || extractAttachmentPostId(card);
   if (!postUrl && postId) {
     const group = parseGroupSource(baseUrl);
     if (group) postUrl = normalizeUrl(`${group.groupUrl}posts/${postId}/`);
@@ -143,7 +143,7 @@ export function parseCard(card: Element, baseUrl: string, scrapedAt = new Date()
   const authorUrl = anonymous ? null : normalizeUrl(authorElement?.getAttribute("href"), baseUrl);
 
   const timeElement = first(card, DOM_RULES.time);
-  const permalinkTime = cleanText(permalink?.getAttribute("aria-label") || permalink?.textContent);
+  const permalinkTime = linkLabel(permalink ?? findTimestampLink(card));
   const publishedTimeRaw = attributeOrText(timeElement, "data-fbgpe-time")
     ?? (looksLikeDisplayedTime(permalinkTime) ? permalinkTime : null);
   const machineTime = timeElement?.getAttribute("datetime") || timeElement?.getAttribute("data-utime");
@@ -152,6 +152,11 @@ export function parseCard(card: Element, baseUrl: string, scrapedAt = new Date()
     : normalizeAbsoluteTime(machineTime);
 
   if (!postId && !postUrl && (!contentText || (!authorName && !publishedTimeRaw))) return null;
+
+  if (!postId && !postUrl) {
+    postUrl = findCommentParentPostUrl(card, baseUrl);
+    postId = extractPostId(postUrl);
+  }
 
   const truncatedAttr = card.getAttribute("data-fbgpe-truncated");
   const contentIsTruncated = truncatedAttr === "true" ? true : truncatedAttr === "false" ? false : findSeeMore(card) ? true : null;
@@ -209,17 +214,72 @@ function isCommentPermalink(raw: string): boolean {
   }
 }
 
-function extractPcbPostId(card: Element): string | null {
-  for (const anchor of card.querySelectorAll<HTMLAnchorElement>('a[href*="set=pcb."]')) {
+function findCommentParentPostUrl(card: Element, baseUrl: string): string | null {
+  const group = parseGroupSource(baseUrl);
+  if (!group || card.closest("[data-commentid], [data-fbgpe-comments]")) return null;
+  const candidates = new Set<string>();
+  for (const anchor of card.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+    const comments = anchor.closest("[data-commentid], [data-fbgpe-comments]");
+    if (!comments || !card.contains(comments)) continue;
+    if (DOM_RULES.content.some((selector) => anchor.closest(selector))) continue;
+    const raw = anchor.getAttribute("href")!;
+    if (!isCommentPermalink(raw)) continue;
+    const normalized = normalizeUrl(raw, baseUrl);
+    const source = normalized ? parseGroupSource(normalized) : null;
+    if (!source || !isSameGroup(source, group)) continue;
+    const match = new URL(normalized!).pathname.match(/^\/groups\/[^/]+\/(?:posts|permalink)\/(\d+)\/?$/);
+    if (match) candidates.add(`${group.groupUrl}posts/${match[1]}/`);
+  }
+  // Multiple comments must agree on the parent; never choose an arbitrary post.
+  return candidates.size === 1 ? [...candidates][0] : null;
+}
+
+// Feed pages use the numeric group ID while comment links use the group's vanity
+// name. Only two IDs or two vanity names can be compared; a mixed pair is accepted.
+function isSameGroup(source: GroupSource, group: GroupSource): boolean {
+  if (source.groupId && group.groupId) return source.groupId === group.groupId;
+  if (source.groupSlug && group.groupSlug) return source.groupSlug === group.groupSlug;
+  return true;
+}
+
+// Photo and video attachments carry the parent post ID as set=pcb.<id>,
+// set=gm.<id>, or /videos/pcb.<id>/<video id>.
+function extractAttachmentPostId(card: Element): string | null {
+  for (const anchor of card.querySelectorAll<HTMLAnchorElement>('a[href*="set=pcb."], a[href*="set=gm."], a[href*="/videos/pcb."]')) {
+    if (anchor.closest("[data-commentid], [data-fbgpe-comments]")) continue;
     try {
-      const set = new URL(anchor.getAttribute("href")!, "https://www.facebook.com/").searchParams.get("set");
-      const match = set?.match(/^pcb\.(\d+)$/);
+      const url = new URL(anchor.getAttribute("href")!, "https://www.facebook.com/");
+      const match = url.searchParams.get("set")?.match(/^(?:pcb|gm)\.(\d+)$/) ?? url.pathname.match(/\/videos\/pcb\.(\d+)\//);
       if (match) return match[1];
     } catch {
       // Try the next rendered attachment URL.
     }
   }
   return null;
+}
+
+// Facebook renders the post timestamp as an obfuscated link (href="?__cft__…") whose
+// visible time lives in the element named by aria-labelledby; the real permalink is
+// only written into href after the link is hovered or focused.
+export function findTimestampLink(card: Element): HTMLAnchorElement | null {
+  for (const anchor of card.querySelectorAll<HTMLAnchorElement>("a[href^='?__cft__']")) {
+    if (anchor.closest("[data-commentid], [data-fbgpe-comments]")) continue;
+    if (DOM_RULES.content.some((selector) => anchor.closest(selector))) continue;
+    if (looksLikeDisplayedTime(linkLabel(anchor))) return anchor;
+  }
+  return null;
+}
+
+export function needsPermalinkReveal(card: Element): HTMLAnchorElement | null {
+  if (findPostPermalink(card) || extractAttachmentPostId(card)) return null;
+  return findTimestampLink(card);
+}
+
+function linkLabel(anchor: Element | null): string {
+  if (!anchor) return "";
+  const labelledBy = (anchor.getAttribute("aria-labelledby") ?? "").split(/\s+/).filter(Boolean)
+    .map((id) => anchor.ownerDocument.getElementById(id)?.textContent ?? "").join(" ");
+  return cleanText(anchor.getAttribute("aria-label") || labelledBy || anchor.textContent);
 }
 
 function looksLikeDisplayedTime(value: string): boolean {

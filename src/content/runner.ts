@@ -1,7 +1,7 @@
 import { PostCollector } from "../core/collector";
 import { cardPacingDelay, scanPacingDelay, scrollDistance } from "../core/pacing";
 import { parseBatchSettings, toPacingInfo } from "../core/settings";
-import { classifyCard, findCards, findSeeMore, isProgressCard, parseCard } from "../core/parser";
+import { classifyCard, findCards, findSeeMore, isProgressCard, needsPermalinkReveal, parseCard } from "../core/parser";
 import { captureMissingPostHtml } from "../core/html-diagnostic";
 import { preflight, type PreflightSuccess } from "../core/preflight";
 import { DOM_RULES, TEXT_SIGNALS, UNSUPPORTED_GROUP_SEGMENTS } from "../shared/rules";
@@ -106,6 +106,7 @@ export class BatchRunner {
       if (kind === "excluded") { this.collector.recordExcluded(); return "excluded"; }
       if (kind === "unknown") { this.collector.recordFailed("unknown_card"); return "failed"; }
       await expandContent(card);
+      await revealPermalink(card);
       const post = parseCard(card, location.href);
       if (!post) { this.collector.recordFailed("minimum_data"); return "failed"; }
       await captureMissingPostHtml(post, card);
@@ -249,6 +250,39 @@ export async function expandContent(card: Element): Promise<void> {
   const stillTruncated = Boolean(findSeeMore(card));
   const contentChanged = (findContent(card)?.textContent ?? "") !== before;
   card.setAttribute("data-fbgpe-truncated", !stillTruncated && contentChanged ? "false" : "true");
+}
+
+// Hovering/focusing the obfuscated timestamp makes Facebook write the real permalink
+// into its href, which parseCard then reads through the normal permalink rules.
+export async function revealPermalink(card: Element, timeoutMs = 1_000): Promise<void> {
+  const link = needsPermalinkReveal(card);
+  if (!link) return;
+  const before = link.getAttribute("href");
+  for (const type of ["pointerover", "pointerenter", "mouseover", "mouseenter"]) {
+    link.dispatchEvent(new MouseEvent(type, { bubbles: !type.endsWith("enter"), composed: true }));
+  }
+  link.focus({ preventScroll: true });
+  await waitForAttributeChange(link, "href", before, timeoutMs);
+  for (const type of ["pointerout", "pointerleave", "mouseout", "mouseleave"]) {
+    link.dispatchEvent(new MouseEvent(type, { bubbles: !type.endsWith("leave"), composed: true }));
+  }
+  link.blur();
+}
+
+function waitForAttributeChange(element: Element, name: string, before: string | null, timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const finish = () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      resolve();
+    };
+    const observer = new MutationObserver(() => {
+      if (element.getAttribute(name) !== before) finish();
+    });
+    const timer = window.setTimeout(finish, timeoutMs);
+    observer.observe(element, { attributes: true, attributeFilter: [name] });
+    if (element.getAttribute(name) !== before) finish();
+  });
 }
 
 function findContent(card: Element): Element | null {

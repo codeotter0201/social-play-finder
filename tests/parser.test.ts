@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { classifyCard, findCards, findSeeMore, parseCard } from "../src/core/parser";
 import { preflight } from "../src/core/preflight";
-import { expandContent } from "../src/content/runner";
+import { expandContent, revealPermalink } from "../src/content/runner";
 
 const fixture = (name: string) => readFileSync(resolve("tests/fixtures", name), "utf8");
 
@@ -89,6 +89,116 @@ describe("Facebook group DOM parser", () => {
     const card = document.querySelector("article")!;
     expect(findSeeMore(card)).toBeNull();
     expect(parseCard(card, "https://www.facebook.com/groups/example/")).toBeNull();
+  });
+
+  it("recovers the parent post from rendered comment links without using comment time", () => {
+    document.body.innerHTML = `
+      <div data-virtualized="false">
+        <div data-ad-rendering-role="profile_name"><a role="link">Test author</a></div>
+        <div data-ad-rendering-role="story_message">Visible post text</div>
+        <div data-commentid="456"><div role="article" aria-label="Reader 的留言">
+          <a href="/groups/example/posts/123/?comment_id=456&amp;__tn__=R-R" aria-label="2026年9月6日">7分鐘</a>
+        </div></div>
+        <div data-commentid="789">
+          <a href="/groups/example/posts/123/?comment_id=456&amp;reply_comment_id=789">1 小時</a>
+        </div>
+      </div>`;
+    const post = parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/");
+    expect(post).toMatchObject({
+      post_id: "123", post_url: "https://www.facebook.com/groups/example/posts/123/",
+      content_text: "Visible post text", published_time_raw: null, published_at: null,
+    });
+    expect(post!.warnings).not.toContain("missing_post_identity");
+  });
+
+  it.each([
+    ['outside the comment region', '<a href="/groups/example/posts/123/?comment_id=456">reference</a>'],
+    ['another group', '<div data-commentid="456"><a href="/groups/other/posts/123/?comment_id=456">comment</a></div>'],
+    ['another host', '<div data-commentid="456"><a href="https://example.org/groups/example/posts/123/?comment_id=456">comment</a></div>'],
+    ['conflicting post IDs', '<div data-commentid="456"><a href="/groups/example/posts/123/?comment_id=456">comment</a><a href="/groups/example/posts/999/?comment_id=789">comment</a></div>'],
+    ['a reference inside the post body', '<div data-ad-rendering-role="story_message"><div data-commentid="456"><a href="/groups/example/posts/123/?comment_id=456">reference</a></div></div>'],
+  ])("does not recover identity from %s", (_name, links) => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>${links}<div data-fbgpe-content>Post text</div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/")).toMatchObject({
+      post_id: null, post_url: null, warnings: ["missing_post_identity"],
+    });
+  });
+
+  it.each([
+    '<a href="/groups/example/posts/321/">2 小時</a>',
+    '<a href="/photo/?fbid=10&amp;set=pcb.321">photo</a>',
+  ])("keeps existing identity ahead of comment fallback: %s", (identity) => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>${identity}
+      <div data-commentid="456"><a href="/groups/example/posts/123/?comment_id=456">7 分鐘</a></div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/example/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/example/posts/321/",
+    });
+  });
+
+  it.each([
+    ['a group-album photo', '<a href="https://www.facebook.com/photo/?fbid=10&amp;set=gm.321&amp;idorvanity=123&amp;__cft__[0]=x">photo</a>'],
+    ['a post video', '<a href="https://www.facebook.com/42/videos/pcb.321/555?__cft__[0]=x">video</a>'],
+  ])("recovers the post ID from %s", (_name, attachment) => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>${attachment}</article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/123/posts/321/", warnings: [],
+    });
+  });
+
+  it("ignores attachment post IDs inside comments", () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>
+      <div data-commentid="456"><a href="/photo/?fbid=10&amp;set=gm.999">photo</a></div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({ post_id: null, post_url: null });
+  });
+
+  it("matches comment links that use the group's vanity name on a numeric group page", () => {
+    const card = (href: string) => `<article><a data-fbgpe-author="Test author"></a><div data-fbgpe-content>Post text</div>
+      <div data-commentid="456"><a href="${href}">7 分鐘</a></div></article>`;
+    document.body.innerHTML = card("https://www.facebook.com/groups/example/posts/321/?comment_id=456");
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/123/posts/321/",
+    });
+    document.body.innerHTML = card("https://www.facebook.com/groups/999/posts/321/?comment_id=456");
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({ post_id: null, post_url: null });
+  });
+
+  it("reads the displayed time of an obfuscated timestamp link from aria-labelledby", () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>
+      <div id="time-label" aria-hidden="true">55分鐘前</div>
+      <a aria-labelledby="time-label" role="link" href="?__cft__[0]=x&amp;__tn__=%2CO%2CP-R#?ibh"></a>
+      <div data-fbgpe-content>Post text</div></article>`;
+    expect(parseCard(document.body.firstElementChild!, "https://www.facebook.com/groups/123/")).toMatchObject({
+      published_time_raw: "55分鐘前", published_at: null,
+    });
+  });
+
+  it("hovers an obfuscated timestamp until Facebook writes the permalink", async () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>
+      <div id="time-label">1 天前</div>
+      <a aria-labelledby="time-label" role="link" href="?__cft__[0]=x#?ibh"></a>
+      <div data-fbgpe-content>Post text</div></article>`;
+    const card = document.body.firstElementChild!;
+    const link = card.querySelector("a[aria-labelledby]")!;
+    const events: string[] = [];
+    for (const type of ["mouseover", "mouseout"]) link.addEventListener(type, () => events.push(type));
+    link.addEventListener("mouseover", () => setTimeout(() => link.setAttribute("href", "https://www.facebook.com/groups/123/posts/321/?__cft__[0]=x"), 10));
+
+    await revealPermalink(card);
+
+    expect(events).toEqual(["mouseover", "mouseout"]);
+    expect(parseCard(card, "https://www.facebook.com/groups/123/")).toMatchObject({
+      post_id: "321", post_url: "https://www.facebook.com/groups/123/posts/321/", published_time_raw: "1 天前",
+    });
+  });
+
+  it("does not hover when the card already has a permalink", async () => {
+    document.body.innerHTML = `<article><a data-fbgpe-author="Test author"></a>
+      <a href="/groups/123/posts/321/">2 小時</a><a role="link" href="?__cft__[0]=x">3 小時</a>
+      <div data-fbgpe-content>Post text</div></article>`;
+    const hovered = vi.fn();
+    document.querySelector("a[href^='?__cft__']")!.addEventListener("mouseover", hovered);
+    await revealPermalink(document.body.firstElementChild!);
+    expect(hovered).not.toHaveBeenCalled();
   });
 
   it("expands and parses the current story-message DOM", async () => {
